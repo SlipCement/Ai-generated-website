@@ -986,8 +986,8 @@
 
       function makeCustomWidget() {
         const id='custom-'+Date.now()+'-'+Math.random().toString(36).slice(2,7);
-        const title=document.getElementById('customWidgetTitle').value.trim()||(type==='text'?'':'Custom Widget');
         const type=document.getElementById('customWidgetType').value;
+        const title=document.getElementById('customWidgetTitle').value.trim()||(type==='text'?'':'Custom Widget');
         const url=document.getElementById('customWidgetUrl').value.trim();
         const buttonText=document.getElementById('customWidgetButton').value.trim()||'Open';
         const textContent=document.getElementById('customWidgetText').value;
