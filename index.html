@@ -338,43 +338,49 @@
       backdrop-filter: blur(10px);
     }
 
-    /* Dashboard widget controls */
-    .card { min-width: 0; }
-    .drag-handle, .resize-handle, .remove-widget { touch-action: none; }
-    .card.dragging { z-index: 2000; transition: none !important; }
-    .drag-handle {
+    /* Stable widget controls */
+    .card {
+      position: relative;
+      min-width: 220px;
+      min-height: 130px;
+      overflow: hidden;
+      transform: translate(var(--drag-x, 0px), var(--drag-y, 0px));
+    }
+    .card:hover {
+      transform: translate(var(--drag-x, 0px), var(--drag-y, 0px)) translateY(-5px) scale(1.02);
+    }
+    .card.dragging, .card.resizing {
+      transition: none !important;
+      z-index: 2000;
+    }
+    .widget-drag {
       position:absolute; top:10px; right:48px; width:30px; height:30px;
       display:flex; align-items:center; justify-content:center;
       border-radius:10px; background:rgba(255,255,255,.1);
       border:1px solid rgba(255,255,255,.15); color:rgba(255,255,255,.75);
-      cursor:grab; user-select:none; z-index:20;
+      cursor:grab; user-select:none; touch-action:none; z-index:50;
     }
-    .drag-handle:active { cursor:grabbing; }
-    .resize-handle {
-      position:absolute; right:8px; bottom:8px; width:22px; height:22px;
-      cursor:nwse-resize; z-index:20;
-      border-right:3px solid rgba(255,255,255,.65);
-      border-bottom:3px solid rgba(255,255,255,.65);
-      border-radius:0 0 5px 0;
+    .widget-drag:active { cursor:grabbing; }
+    .widget-resize {
+      position:absolute; right:5px; bottom:5px; width:24px; height:24px;
+      cursor:nwse-resize; touch-action:none; z-index:50;
+      border-right:3px solid rgba(255,255,255,.7);
+      border-bottom:3px solid rgba(255,255,255,.7);
     }
-    .remove-widget {
+    .widget-remove {
       position:absolute; top:10px; right:10px; width:30px; height:30px;
-      padding:0; border-radius:10px; background:rgba(255,70,90,.22);
-      border:1px solid rgba(255,100,120,.35); color:white; z-index:20;
-      cursor:pointer; font-size:20px; line-height:1;
+      padding:0; border-radius:10px; background:rgba(255,70,90,.25);
+      border:1px solid rgba(255,100,120,.4); color:white; z-index:50;
+      cursor:pointer; font-size:20px; line-height:1; touch-action:manipulation;
     }
     #widgetMenu {
-      position:fixed; left:20px; top:20px; z-index:3000;
+      position:fixed; left:20px; top:20px; z-index:5000;
       display:flex; gap:8px; flex-wrap:wrap;
     }
-    #widgetMenu button {
-      background:rgba(20,25,40,.85); border:1px solid rgba(255,255,255,.18);
-      backdrop-filter:blur(10px);
-    }
+    #widgetMenu button { background:rgba(20,25,40,.9); border:1px solid rgba(255,255,255,.2); }
     #widgetPicker {
-      position:fixed; inset:0; z-index:4000; display:flex;
-      align-items:center; justify-content:center;
-      background:rgba(0,0,0,.45); backdrop-filter:blur(5px);
+      position:fixed; inset:0; z-index:6000; display:flex; align-items:center;
+      justify-content:center; background:rgba(0,0,0,.5); backdrop-filter:blur(5px);
     }
     .picker-inner {
       width:min(360px,90vw); padding:24px; border-radius:22px;
@@ -385,7 +391,7 @@
     .picker-inner h3 { margin-bottom:8px; }
     .picker-inner button { width:100%; }
     .light .picker-inner { background:#f8fafc; color:#111827; }
-    .light #widgetMenu button { background:rgba(255,255,255,.85); color:#111827; }
+    .light #widgetMenu button { background:rgba(255,255,255,.9); color:#111827; }
 
     /* Suggestions dropdown styles */
     .suggestions-dropdown {
@@ -788,6 +794,491 @@
       }
       function addGithub() {
         makeNewCard('extra-github', '<h2>GitHub</h2><button type="button" style="width:100%;background:#24292f;color:white;" onclick="window.location.href=\'https://github.com\'">Open GitHub</button>');
+      }
+    })();
+
+    // Debounce function for API calls
+    function debounce(func, wait) {
+      let timeout;
+      return function executedFunction(...args) {
+        const later = () => {
+          clearTimeout(timeout);
+          func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+      };
+    }
+
+    function fetchDuckDuckGoSuggestions(query) {
+  return new Promise((resolve) => {
+    if (!query.trim()) {
+      resolve([]);
+      return;
+    }
+
+    const callbackName =
+      'ddg_' + Math.random().toString(36).slice(2);
+
+    window[callbackName] = function(data) {
+      resolve(
+        data.map(item => item.phrase).slice(0, 8)
+      );
+
+      delete window[callbackName];
+      script.remove();
+    };
+
+    const script = document.createElement('script');
+
+    script.src =
+      `https://duckduckgo.com/ac/?q=${encodeURIComponent(query)}&callback=${callbackName}`;
+
+    script.onerror = () => {
+      resolve([]);
+      delete window[callbackName];
+      script.remove();
+    };
+
+    document.body.appendChild(script);
+  });
+}
+
+    // Fetch suggestions from Google using custom search API
+    async function fetchGoogleSuggestions(query) {
+  return await fetchDuckDuckGoSuggestions(query);
+}
+    // Fetch suggestions from YouTube using API
+    async function fetchYouTubeSuggestions(query) {
+  return await fetchDuckDuckGoSuggestions(query);
+}
+
+    // Fetch Wikipedia suggestions
+    async function fetchWikipediaSuggestions(query) {
+      if (!query.trim()) return [];
+      try {
+        const response = await fetch(`https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query)}&format=json&origin=*`);
+        const data = await response.json();
+        return data.query.search.map(item => item.title);
+      } catch (e) {
+        console.error('Error fetching Wikipedia suggestions:', e);
+        return [];
+      }
+    }
+
+    // Display suggestions in dropdown
+    function displaySuggestions(suggestions, dropdownId, inputId) {
+      const dropdown = document.getElementById(dropdownId);
+      const input = document.getElementById(inputId);
+      
+      if (suggestions.length === 0) {
+        dropdown.classList.remove('show');
+        return;
+      }
+
+      dropdown.innerHTML = suggestions.slice(0, 8).map(suggestion => `
+        <div class="suggestion-item" onclick="setSuggestion('${inputId}', '${suggestion.replace(/'/g, "\\'")}')">
+          <svg class="suggestion-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"></circle>
+            <path d="m21 21-4.35-4.35"></path>
+          </svg>
+          <span class="suggestion-text">${escapeHtml(suggestion)}</span>
+        </div>
+      `).join('');
+
+      dropdown.classList.add('show');
+    }
+
+    // Set suggestion text to input
+    function setSuggestion(inputId, suggestion) {
+      const input = document.getElementById(inputId);
+      input.value = suggestion;
+      
+      // Close dropdown
+      const dropdownId = inputId.replace('Input', 'Suggestions');
+      document.getElementById(dropdownId).classList.remove('show');
+      
+      // Focus on input
+      input.focus();
+    }
+
+    // Escape HTML to prevent XSS
+    function escapeHtml(text) {
+      const map = {
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#039;'
+      };
+      return text.replace(/[&<>"']/g, m => map[m]);
+    }
+
+    // Create debounced fetch functions
+    const duckDuckGoFetch = debounce(async (query) => {
+      const suggestions = await fetchDuckDuckGoSuggestions(query);
+      displaySuggestions(suggestions, 'duckSuggestions', 'duckInput');
+    }, 300);
+
+    const googleFetch = debounce(async (query) => {
+      const suggestions = await fetchGoogleSuggestions(query);
+      displaySuggestions(suggestions, 'googleSuggestions', 'googleInput');
+    }, 300);
+
+    const youtubeFetch = debounce(async (query) => {
+      const suggestions = await fetchYouTubeSuggestions(query);
+      displaySuggestions(suggestions, 'youtubeSuggestions', 'youtubeInput');
+    }, 300);
+
+    const wikipediaFetch = debounce(async (query) => {
+      const suggestions = await fetchWikipediaSuggestions(query);
+      displaySuggestions(suggestions, 'wikiSuggestions', 'wikiInput');
+    }, 300);
+
+    // Add event listeners for input changes
+    document.getElementById('duckInput').addEventListener('input', (e) => {
+      duckDuckGoFetch(e.target.value);
+    });
+
+    document.getElementById('googleInput').addEventListener('input', (e) => {
+      googleFetch(e.target.value);
+    });
+
+    document.getElementById('youtubeInput').addEventListener('input', (e) => {
+      youtubeFetch(e.target.value);
+    });
+
+    document.getElementById('wikiInput').addEventListener('input', (e) => {
+      wikipediaFetch(e.target.value);
+    });
+
+    // Close suggestions on blur
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.search-box-wrapper')) {
+        document.querySelectorAll('.suggestions-dropdown').forEach(el => {
+          el.classList.remove('show');
+        });
+      }
+    });
+
+    function openEngine(type) {
+      const engines = {
+        google: 'https://www.google.com',
+        duck: 'https://duckduckgo.com',
+        youtube: 'https://www.youtube.com',
+        wiki: 'https://en.wikipedia.org'
+      };
+
+      const inputIds = {
+        google: 'googleInput',
+        duck: 'duckInput',
+        youtube: 'youtubeInput',
+        wiki: 'wikiInput'
+      };
+
+      const input = document.getElementById(inputIds[type]);
+      const query = input ? input.value.trim() : '';
+
+      if (query) {
+        let url = '';
+        if (type === 'google') url = 'https://www.google.com/search?q=';
+        if (type === 'duck') url = 'https://duckduckgo.com/?q=';
+        if (type === 'youtube') url = 'https://www.youtube.com/results?search_query=';
+        if (type === 'wiki') url = 'https://en.wikipedia.org/wiki/Special:Search?search=';
+
+        window.location.href = url + encodeURIComponent(query);
+      } else {
+        window.location.href = engines[type];
+      }
+    }
+
+    function handleCardClick(type, event) {
+      const tag = event.target.tagName.toLowerCase();
+      if (tag === 'input' || tag === 'button' || tag === 'textarea') return;
+      openEngine(type);
+    }
+
+    function updateClock() {
+      const now = new Date();
+      const time = now.toLocaleTimeString();
+      document.getElementById('clock').textContent = time;
+    }
+
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    function saveNotes() {
+      localStorage.setItem('jasperSearchNotes', document.getElementById('notesBox').value);
+      alert('Notes saved!');
+    }
+
+    window.addEventListener('load', () => {
+      const saved = localStorage.getItem('jasperSearchNotes');
+      if(saved) {
+        document.getElementById('notesBox').value = saved;
+      }
+      // Focus on DuckDuckGo search bar on page load
+      document.getElementById('duckInput').focus();
+    });
+
+    function toggleTheme() {
+      document.body.classList.toggle('light');
+      localStorage.setItem('theme', document.body.classList.contains('light') ? 'light' : 'dark');
+    }
+
+    // Load saved theme preference
+    window.addEventListener('load', () => {
+      const savedTheme = localStorage.getItem('theme');
+      if (savedTheme === 'light') {
+        document.body.classList.add('light');
+      }
+    });
+
+    // Add Enter/Return key support for search inputs
+    document.getElementById('duckInput').addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') openEngine('duck');
+    });
+
+    document.getElementById('googleInput').addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') openEngine('google');
+    });
+
+    document.getElementById('youtubeInput').addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') openEngine('youtube');
+    });
+
+    document.getElementById('wikiInput').addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') openEngine('wiki');
+    });
+
+    // Add Cmd+Enter support for notes textarea (Mac) and Ctrl+Enter (Windows/Linux)
+    document.getElementById('notesBox').addEventListener('keypress', (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        saveNotes();
+      }
+    });
+
+    // Handle all link clicks to open in current tab
+    document.addEventListener('click', (e) => {
+      const link = e.target.closest('a');
+      if (link && !e.target.closest('.suggestions-dropdown')) {
+        e.preventDefault();
+        window.location.href = link.href;
+      }
+    });
+    // Handle all link clicks to open in current tab
+document.addEventListener('click', (e) => {
+  const link = e.target.closest('a');
+  if (link && !e.target.closest('.suggestions-dropdown')) {
+    e.preventDefault();
+    window.location.href = link.href;
+  }
+});
+
+// Prevent browser autocomplete history
+document.querySelectorAll('input[type="search"]').forEach(input => {
+  input.setAttribute('autocomplete', 'off');
+
+  input.addEventListener('focus', () => {
+    input.setAttribute('readonly', true);
+    setTimeout(() => {
+      input.removeAttribute('readonly');
+    }, 50);
+  });
+});
+  </script>
+</body>
+</html>    // Stable movable/resizable widgets
+    (() => {
+      const POS_KEY = 'aiGeneratedWebsiteWidgetPositions';
+      const REMOVED_KEY = 'aiGeneratedWebsiteRemovedWidgets';
+      const positions = JSON.parse(localStorage.getItem(POS_KEY) || '{}');
+      const removed = new Set(JSON.parse(localStorage.getItem(REMOVED_KEY) || '[]'));
+
+      const save = () => {
+        localStorage.setItem(POS_KEY, JSON.stringify(positions));
+        localStorage.setItem(REMOVED_KEY, JSON.stringify([...removed]));
+      };
+
+      function setupCard(card, index) {
+        if (card.dataset.widgetReady) return;
+        const id = card.dataset.widgetId || ('widget-' + index);
+        card.dataset.widgetId = id;
+        card.dataset.widgetReady = '1';
+
+        if (removed.has(id)) {
+          card.remove();
+          return;
+        }
+
+        const drag = document.createElement('div');
+        drag.className = 'widget-drag';
+        drag.textContent = '⠿';
+        drag.title = 'Drag widget';
+
+        const resize = document.createElement('div');
+        resize.className = 'widget-resize';
+        resize.title = 'Resize widget';
+
+        const close = document.createElement('button');
+        close.className = 'widget-remove';
+        close.type = 'button';
+        close.textContent = '×';
+        close.title = 'Remove widget';
+
+        card.append(drag, resize, close);
+
+        const saved = positions[id] || {};
+        card.style.setProperty('--drag-x', (saved.x || 0) + 'px');
+        card.style.setProperty('--drag-y', (saved.y || 0) + 'px');
+        if (saved.w) card.style.width = saved.w + 'px';
+        if (saved.h) card.style.height = saved.h + 'px';
+
+        let action = null;
+        let sx = 0, sy = 0, startX = 0, startY = 0, startW = 0, startH = 0;
+
+        function pointerDown(ev, type) {
+          ev.preventDefault();
+          ev.stopPropagation();
+          action = type;
+          sx = ev.clientX;
+          sy = ev.clientY;
+          startX = parseFloat(card.style.getPropertyValue('--drag-x')) || 0;
+          startY = parseFloat(card.style.getPropertyValue('--drag-y')) || 0;
+          const r = card.getBoundingClientRect();
+          startW = r.width;
+          startH = r.height;
+          card.classList.add(type === 'move' ? 'dragging' : 'resizing');
+          ev.currentTarget.setPointerCapture(ev.pointerId);
+        }
+
+        function pointerMove(ev) {
+          if (!action) return;
+          ev.preventDefault();
+          if (action === 'move') {
+            card.style.setProperty('--drag-x', (startX + ev.clientX - sx) + 'px');
+            card.style.setProperty('--drag-y', (startY + ev.clientY - sy) + 'px');
+          } else {
+            const maxW = Math.max(220, window.innerWidth - 30);
+            const maxH = Math.max(130, window.innerHeight - 30);
+            const w = Math.min(maxW, Math.max(220, startW + ev.clientX - sx));
+            const h = Math.min(maxH, Math.max(130, startH + ev.clientY - sy));
+            card.style.width = w + 'px';
+            card.style.height = h + 'px';
+          }
+        }
+
+        function pointerUp(ev) {
+          if (!action) return;
+          if (action === 'move') {
+            positions[id] = {...(positions[id] || {}),
+              x: parseFloat(card.style.getPropertyValue('--drag-x')) || 0,
+              y: parseFloat(card.style.getPropertyValue('--drag-y')) || 0};
+          } else {
+            positions[id] = {...(positions[id] || {}),
+              w: card.offsetWidth, h: card.offsetHeight};
+          }
+          save();
+          card.classList.remove('dragging', 'resizing');
+          action = null;
+        }
+
+        drag.addEventListener('pointerdown', ev => pointerDown(ev, 'move'));
+        resize.addEventListener('pointerdown', ev => pointerDown(ev, 'resize'));
+        drag.addEventListener('pointermove', pointerMove);
+        resize.addEventListener('pointermove', pointerMove);
+        drag.addEventListener('pointerup', pointerUp);
+        resize.addEventListener('pointerup', pointerUp);
+        drag.addEventListener('pointercancel', pointerUp);
+        resize.addEventListener('pointercancel', pointerUp);
+
+        close.addEventListener('pointerdown', ev => {
+          ev.preventDefault();
+          ev.stopPropagation();
+        });
+        close.addEventListener('click', ev => {
+          ev.preventDefault();
+          ev.stopPropagation();
+          removed.add(id);
+          save();
+          card.remove();
+        });
+      }
+
+      document.querySelectorAll('.card').forEach((card, i) => setupCard(card, i));
+
+      const menu = document.createElement('div');
+      menu.id = 'widgetMenu';
+      menu.innerHTML = '<button type="button" id="addWidget">＋ Add Widget</button>';
+      document.body.appendChild(menu);
+
+      const reset = document.createElement('button');
+      reset.type = 'button';
+      reset.textContent = 'Reset Widgets';
+      reset.id = 'resetWidgets';
+      menu.appendChild(reset);
+
+      reset.addEventListener('click', ev => {
+        ev.preventDefault();
+        ev.stopPropagation();
+        localStorage.removeItem(POS_KEY);
+        localStorage.removeItem(REMOVED_KEY);
+        location.reload();
+      });
+
+      document.getElementById('addWidget').addEventListener('click', ev => {
+        ev.preventDefault();
+        ev.stopPropagation();
+        if (document.getElementById('widgetPicker')) return;
+
+        const picker = document.createElement('div');
+        picker.id = 'widgetPicker';
+        picker.innerHTML = '<div class="picker-inner"><h3>Add Widget</h3>' +
+          '<button type="button" data-add="clock">🕐 Live Clock</button>' +
+          '<button type="button" data-add="notes">📝 Quick Notes</button>' +
+          '<button type="button" data-add="github">🐙 GitHub</button>' +
+          '<button type="button" id="closeWidgetPicker">Cancel</button></div>';
+        document.body.appendChild(picker);
+
+        picker.querySelectorAll('[data-add]').forEach(btn => {
+          btn.addEventListener('click', ev => {
+            ev.preventDefault();
+            ev.stopPropagation();
+            const type = btn.dataset.add;
+            const id = 'extra-' + type;
+            if (document.querySelector('[data-widget-id="' + id + '"]')) return;
+            removed.delete(id);
+
+            const card = document.createElement('div');
+            card.className = 'card';
+            card.dataset.widgetId = id;
+            if (type === 'clock') {
+              card.innerHTML = '<h2>Live Clock</h2><div class="clock">00:00:00</div>';
+            } else if (type === 'notes') {
+              card.innerHTML = '<h2>Quick Notes</h2><textarea style="width:100%;height:120px;padding:15px;border-radius:16px;"></textarea>';
+            } else {
+              card.innerHTML = '<h2>GitHub</h2><button type="button" style="width:100%;">Open GitHub</button>';
+              card.querySelector('button').addEventListener('click', ev => {
+                ev.stopPropagation();
+                window.location.href = 'https://github.com';
+              });
+            }
+            document.querySelector('.tools')?.appendChild(card);
+            setupCard(card, document.querySelectorAll('.card').length - 1);
+            save();
+            picker.remove();
+          });
+        });
+
+        picker.querySelector('#closeWidgetPicker').addEventListener('click', ev => {
+          ev.preventDefault();
+          ev.stopPropagation();
+          picker.remove();
+        });
+      });
+    })();
+
+eNewCard('extra-github', '<h2>GitHub</h2><button type="button" style="width:100%;background:#24292f;color:white;" onclick="window.location.href=\'https://github.com\'">Open GitHub</button>');
       }
     })();
 
