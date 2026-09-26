@@ -1097,6 +1097,23 @@
             '<button type="button" id="custom-widget-back">Back</button>' +
             '</div>';
 
+          const typeSelect=picker.querySelector('#customWidgetType');
+          const textField=picker.querySelector('#customWidgetText').parentElement;
+          const urlField=picker.querySelector('#customWidgetUrl').parentElement;
+          const buttonField=picker.querySelector('#customWidgetButton').parentElement;
+          const apiField=picker.querySelector('#customWidgetApiKey').parentElement;
+          const apiHelp=picker.querySelector('.custom-widget-help');
+          const updateCustomFields=()=>{
+            const type=typeSelect.value;
+            textField.style.display=type==='text'?'flex':'none';
+            urlField.style.display=type==='text'?'none':'flex';
+            buttonField.style.display=type==='button'?'flex':'none';
+            apiField.style.display=type==='api'?'flex':'none';
+            apiHelp.style.display=type==='api'?'block':'none';
+          };
+          typeSelect.addEventListener('change',updateCustomFields);
+          updateCustomFields();
+
           picker.querySelector('#custom-widget-back').onclick=()=>{
             picker.remove();
             document.getElementById('widget-add-button').click();
