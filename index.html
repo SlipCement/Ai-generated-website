@@ -424,7 +424,8 @@
     }
     #widget-toolbar button { margin: 0 !important; padding: 10px 14px !important; cursor: pointer !important; }
     #widget-toolbar .widget-edit-control { display: none !important; }
-    #widget-toolbar #widget-snap-toggle { display:block !important; }
+    body.widget-editing #widget-toolbar .widget-edit-control { display: block !important; }
+    #widget-toolbar #widget-snap-toggle { display: block !important; }
     #widget-toolbar #widget-snap-toggle {
       min-width: 120px;
     }
@@ -723,6 +724,10 @@
       let positions = {};
       let removed = new Set();
       let dirty = false;
+      const SNAP_KEY='aiGeneratedWidgetSnap';
+      const SNAP_SIZE=20;
+      let snapEnabled=localStorage.getItem(SNAP_KEY)!=='0';
+      const snap=n=>snapEnabled ? Math.round(n/SNAP_SIZE)*SNAP_SIZE : Math.round(n);
 
       try { positions = JSON.parse(localStorage.getItem(POS_KEY) || '{}'); } catch {}
       try { removed = new Set(JSON.parse(localStorage.getItem(REMOVED_KEY) || '[]')); } catch {}
@@ -820,10 +825,6 @@
         card.dataset.widgetReady='true';
 
         let action=null,pointerId=null,sx=0,sy=0,startX=0,startY=0,startW=0,startH=0;
-        const SNAP_KEY='aiGeneratedWidgetSnap';
-        let snapEnabled=localStorage.getItem(SNAP_KEY)!=='0';
-        const SNAP_SIZE=20;
-        const snap=n=>snapEnabled ? Math.round(n/SNAP_SIZE)*SNAP_SIZE : Math.round(n);
 
         function begin(ev,type) {
           if (!document.body.classList.contains('widget-editing')) return;
