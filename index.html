@@ -89,6 +89,20 @@
       max-width: 100%;
     }
 
+    /* Theme picker */
+    #theme-toolbar-button { position: fixed; top: 20px; right: 20px; z-index: 5000; }
+    #theme-picker {
+      position: fixed; top: 62px; right: 20px; z-index: 7000;
+      display: none; width: 220px; padding: 10px; border-radius: 16px;
+      background: rgba(20,20,30,.97); border: 1px solid rgba(255,255,255,.18);
+      box-shadow: 0 15px 45px rgba(0,0,0,.45); backdrop-filter: blur(10px);
+    }
+    #theme-picker.show { display: block; }
+    #theme-picker button {
+      width: 100%; margin: 4px 0; padding: 10px 12px;
+      text-align: left; border-radius: 10px; cursor: pointer;
+    }
+
     @media (max-width: 800px) {
       .search-grid {
         grid-template-columns: 1fr;
@@ -783,8 +797,8 @@
             card.style.setProperty('--widget-x',(startX+dx)+'px');
             card.style.setProperty('--widget-y',(startY+dy)+'px');
           } else {
-            card.style.setProperty('--widget-width',Math.max(220,Math.round(startW+dx))+'px');
-            card.style.height=Math.max(130,Math.round(startH+dy))+'px';
+            card.style.setProperty('--widget-width',Math.max(160,Math.round(startW+dx))+'px');
+            card.style.height=Math.max(90,Math.round(startH+dy))+'px';
           }
           updateCanvasHeight();
         }
@@ -971,6 +985,46 @@
           picker.querySelector('#custom-widget-create').onclick=()=>{makeCustomWidget();picker.remove();};
         });
       });
+
+      // Theme selector
+      (() => {
+        const themes = {
+          default: { name:'Default', bg:'#0b0d12', card:'rgba(255,255,255,.055)', text:'#fff', accent:'#00e5ff' },
+          midnight: { name:'Midnight Blue', bg:'#07111f', card:'rgba(30,100,180,.13)', text:'#e8f4ff', accent:'#4da3ff' },
+          sunset: { name:'Sunset', bg:'#1b0c16', card:'rgba(255,100,100,.10)', text:'#fff0f3', accent:'#ff8a65' },
+          forest: { name:'Forest', bg:'#07150f', card:'rgba(60,180,100,.10)', text:'#eafff0', accent:'#57d68d' },
+          purple: { name:'Purple', bg:'#12091f', card:'rgba(150,80,255,.12)', text:'#f6edff', accent:'#b47cff' },
+          ocean: { name:'Ocean', bg:'#06151a', card:'rgba(0,180,210,.11)', text:'#e7fcff', accent:'#35d9e8' },
+          monochrome: { name:'Monochrome', bg:'#111', card:'rgba(255,255,255,.08)', text:'#fff', accent:'#fff' }
+        };
+        const key='aiGeneratedWebsiteTheme';
+        function applyTheme(name) {
+          const t=themes[name]||themes.default;
+          document.body.style.background=t.bg;
+          document.body.style.color=t.text;
+          document.documentElement.style.setProperty('--theme-accent',t.accent);
+          document.documentElement.style.setProperty('--theme-card',t.card);
+          document.querySelectorAll('.card').forEach(card => {
+            if (!card.dataset.themeCustom) card.style.background=t.card;
+          });
+          localStorage.setItem(key,name);
+        }
+        const button=document.createElement('button');
+        button.id='theme-toolbar-button'; button.type='button'; button.textContent='🎨 Themes';
+        document.body.appendChild(button);
+        const picker=document.createElement('div');
+        picker.id='theme-picker';
+        picker.innerHTML='<strong>Choose a theme</strong>';
+        Object.entries(themes).forEach(([id,t])=>{
+          const b=document.createElement('button'); b.type='button'; b.textContent=t.name;
+          b.style.border='1px solid '+t.accent; b.style.background=t.card; b.style.color=t.text;
+          b.onclick=()=>{applyTheme(id);picker.classList.remove('show');};
+          picker.appendChild(b);
+        });
+        document.body.appendChild(picker);
+        button.onclick=e=>{e.preventDefault();e.stopPropagation();picker.classList.toggle('show');};
+        applyTheme(localStorage.getItem(key)||'default');
+      })();
 
       // Keep the canvas tall enough after a window resize without touching widget positions.
       window.addEventListener('resize',updateCanvasHeight);
