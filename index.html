@@ -360,6 +360,8 @@
       z-index: 2000 !important;
     }
 
+    body.widget-editing .widget-resize-handle { resize: both; }
+
     .widget-drag-handle,
     .widget-remove-button,
     .widget-resize-handle { display: none !important; }
@@ -883,7 +885,8 @@
       const toolbar=document.createElement('div');
       toolbar.id='widget-toolbar';
       toolbar.innerHTML='<button type="button" id="widget-edit-toggle">Edit Widgets</button>' +
-        '<button type="button" class="widget-edit-control" id="widget-add-button">＋ Add Widget</button>' +
+        '<button type="button" class="widget-edit-control" id="widget-add-button">Add Widget</button>' +
+        '<button type="button" class="widget-edit-control" id="widget-restore-search">Restore Search</button>' +
         '<button type="button" class="widget-edit-control" id="widget-reset-button">Reset Widgets</button>' +
         '<button type="button" id="widget-snap-toggle">🧲 Snap: ON</button>';
       document.body.appendChild(toolbar);
@@ -928,6 +931,32 @@
         localStorage.removeItem(POS_KEY);localStorage.removeItem(REMOVED_KEY);
         location.reload();
       });
+
+      document.getElementById('widget-restore-search').addEventListener('click',ev=>{
+        ev.preventDefault();ev.stopPropagation();
+        restoreSearchWidget();
+      });
+
+      function restoreSearchWidget() {
+        const type='google';
+        const id='restored-search-'+Date.now()+'-'+Math.random().toString(36).slice(2,6);
+        const card=document.createElement('div');
+        card.className='card';
+        card.dataset.widgetId=id;
+        card.dataset.restoredSearch='true';
+        card.innerHTML='<h2>Google Search</h2><div class="search-box-wrapper"><div class="search-box"><input type="search" placeholder="Search Google..." autocomplete="off"><button type="button">Search</button></div><div class="suggestions-dropdown"></div></div>';
+        const input=card.querySelector('input');
+        const button=card.querySelector('button');
+        const run=()=>{const q=input.value.trim();if(q) window.location.href='https://www.google.com/search?q='+encodeURIComponent(q);};
+        button.addEventListener('click',ev=>{ev.preventDefault();ev.stopPropagation();run();});
+        input.addEventListener('keypress',ev=>{if(ev.key==='Enter')run();});
+        canvas.appendChild(card);
+        setupWidget(card,canvas.querySelectorAll('.card').length-1);
+        positions[id]={left:20,top:20,x:0,y:0};
+        card.style.setProperty('--widget-left','20px');
+        card.style.setProperty('--widget-top','20px');
+        save();updateCanvasHeight();
+      }
 
       function makeCustomWidget() {
         const id='custom-'+Date.now()+'-'+Math.random().toString(36).slice(2,7);
