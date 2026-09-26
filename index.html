@@ -995,8 +995,10 @@
 
         if(type==='text'){
           // Pure text widgets do not require a URL.
-        } else if(!url){ alert('Please enter a URL.'); return; }
-        if(!/^https?:\/\//i.test(url)){ alert('The URL must start with http:// or https://'); return; }
+        } else {
+          if(!url){ alert('Please enter a URL.'); return; }
+          if(!/^https?:\/\//i.test(url)){ alert('The URL must start with http:// or https://'); return; }
+        }
 
         const card=document.createElement('div');
         card.className='card';
@@ -1088,35 +1090,28 @@
             '<h3>Custom Widget</h3>' +
             '<div class="custom-widget-form">' +
             '<label>Widget title</label><input id="customWidgetTitle" placeholder="My Widget">' +
-            '<label>Type</label><select id="customWidgetType"><option value="button">Button / Link</option><option value="text">Pure Text</option><option value="iframe">Embedded page</option><option value="api">API data</option></select>' +
-            '<label>Text content (pure text only)</label><textarea id="customWidgetText" placeholder="Type anything you want here..."></textarea><label>URL</label><input id="customWidgetUrl" placeholder="https://example.com">' +
-            '<label>Button text (button/link only)</label><input id="customWidgetButton" placeholder="Open">' +
-            '<label>API key (API only, optional)</label><input id="customWidgetApiKey" type="password" placeholder="Bearer token">' +
+            '<label>Type of widget</label><select id="customWidgetType"><option value="button">Button / Link</option><option value="text">Pure Text</option><option value="iframe">Embedded Page</option><option value="api">API Data</option></select>' +
+            '<div id="customWidgetTextField"><label>Text</label><textarea id="customWidgetText" placeholder="Type anything you want here..."></textarea></div>' +
+            '<div id="customWidgetUrlField"><label>URL</label><input id="customWidgetUrl" placeholder="https://example.com"></div>' +
+            '<div id="customWidgetButtonField"><label>Button text</label><input id="customWidgetButton" placeholder="Open"></div>' +
+            '<div id="customWidgetApiField"><label>API key</label><input id="customWidgetApiKey" type="password" placeholder="Bearer token"></div>' +
             '<div class="custom-widget-help">API keys are stored only in this browser and sent from the page, so do not use a secret that must stay private. Browser CORS rules can prevent some APIs from loading.</div>' +
             '<button type="button" id="custom-widget-create">Create Widget</button>' +
             '<button type="button" id="custom-widget-back">Back</button>' +
             '</div>';
 
           const typeSelect=picker.querySelector('#customWidgetType');
-          const textInput=picker.querySelector('#customWidgetText');
-          const urlInput=picker.querySelector('#customWidgetUrl');
-          const buttonInput=picker.querySelector('#customWidgetButton');
-          const apiInput=picker.querySelector('#customWidgetApiKey');
-          const textLabel=textInput.previousElementSibling;
-          const urlLabel=urlInput.previousElementSibling;
-          const buttonLabel=buttonInput.previousElementSibling;
-          const apiLabel=apiInput.previousElementSibling;
+          const textField=picker.querySelector('#customWidgetTextField');
+          const urlField=picker.querySelector('#customWidgetUrlField');
+          const buttonField=picker.querySelector('#customWidgetButtonField');
+          const apiField=picker.querySelector('#customWidgetApiField');
           const apiHelp=picker.querySelector('.custom-widget-help');
-          const setField=(label,input,show)=>{
-            label.style.display=show?'':'none';
-            input.style.display=show?'':'none';
-          };
           const updateCustomFields=()=>{
             const type=typeSelect.value;
-            setField(textLabel,textInput,type==='text');
-            setField(urlLabel,urlInput,type!=='text');
-            setField(buttonLabel,buttonInput,type==='button');
-            setField(apiLabel,apiInput,type==='api');
+            textField.style.display=type==='text'?'block':'none';
+            urlField.style.display=type==='text'?'none':'block';
+            buttonField.style.display=type==='button'?'block':'none';
+            apiField.style.display=type==='api'?'block':'none';
             apiHelp.style.display=type==='api'?'block':'none';
           };
           typeSelect.addEventListener('change',updateCustomFields);
