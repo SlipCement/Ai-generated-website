@@ -845,7 +845,8 @@
           } else {
             card.style.setProperty('--widget-width',Math.max(160,snap(startW+dx))+'px');
             const minH = Math.max(54, Math.ceil(card.scrollHeight + 2));
-            card.style.setProperty('--widget-height',Math.max(minH,snap(startH+dy))+'px');
+            const targetH = Math.max(minH, snap(startH + dy));
+            card.style.setProperty('--widget-height', targetH + 'px');
           }
           updateCanvasHeight();
         }
