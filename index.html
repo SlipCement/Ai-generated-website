@@ -193,7 +193,7 @@
       padding: 12px 16px;
       border-radius: 12px;
       cursor: pointer;
-      background: linear-gradient(135deg, cyan, #7c3aed);
+      background: linear-gradient(135deg, #22c55e, #15803d);
       color: white;
       font-weight: bold;
       transition: 0.2s ease;
@@ -285,7 +285,7 @@
     }
 
     .light button:not(.theme-toggle) {
-      background: linear-gradient(135deg, #0891b2, #6d28d9);
+      background: linear-gradient(135deg, #4ade80, #166534);
     }
 
     .light h2 {
@@ -360,7 +360,7 @@
       z-index: 2000 !important;
     }
 
-    body.widget-editing .widget-resize-handle { resize: both; }
+    
 
     .widget-drag-handle,
     .widget-remove-button,
@@ -405,7 +405,7 @@
       display: block !important;
       position: absolute !important;
       right: 4px !important; bottom: 4px !important;
-      width: 36px !important; height: 36px !important;
+      width: 42px !important; height: 42px !important;
       cursor: nwse-resize !important; touch-action: none !important;
       -webkit-user-select: none !important; user-select: none !important;
       z-index: 100 !important;
@@ -754,27 +754,10 @@
       if (searchGrid) searchGrid.remove();
 
       function defaultPosition(id, index) {
-        const wide = window.innerWidth > 800;
-        const gap = 20;
-        const cardW = 400;
-        if (!wide) {
-          return { x: 0, y: index * 245 };
-        }
-        const center = Math.max(0, (canvas.clientWidth - (cardW * 2 + gap)) / 2);
-
-        const defaults = {
-          'engine-duck':   { x: center, y: 0 },
-          'engine-google': { x: center + cardW + gap, y: 0 },
-          'engine-youtube':{ x: center, y: 245 },
-          'engine-wiki':   { x: center + cardW + gap, y: 245 },
-          'clock':         { x: center, y: 490 },
-          'notes':         { x: center + cardW + gap, y: 490 },
-          'github':        { x: center, y: 760 }
-        };
-        return defaults[id] || {
-          x: center,
-          y: 760 + Math.max(0,index-6) * 245
-        };
+        const cols=Math.max(1,Math.floor((canvas.clientWidth+20)/420));
+        const col=index%cols;
+        const row=Math.floor(index/cols);
+        return {x:col*420,y:row*220};
       }
 
       function updateCanvasHeight() {
