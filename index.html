@@ -966,7 +966,9 @@
           if(!card) return;
           const input=card.querySelector('input,textarea');
           if(!input) return;
-          localStorage.setItem('startupFocus',input.id);
+          const focusId=input.id || ('startup-'+Date.now());
+          if(!input.id) input.id=focusId;
+          localStorage.setItem('startupFocus',focusId);
           card.classList.add('startup-focus-selected');
           button.textContent='Startup Focus: Set';
           setTimeout(()=>card.classList.remove('startup-focus-selected'),1400);
@@ -1182,26 +1184,58 @@
         picker.id='theme-picker';
         picker.innerHTML='<strong>Choose a theme</strong>';
 
-        function addThemeButton(id,t) {
-          const b=document.createElement('button');
-          b.type='button'; b.textContent=t.name;
-          b.style.border='1px solid '+t.accent;
-          b.style.background=t.card; b.style.color=t.text;
-          b.onclick=()=>{applyTheme(id);picker.classList.remove('show');};
-          if(customThemes[id]){
-            const row=document.createElement('span');
-            row.style.display='flex'; row.style.gap='4px';
-            const edit=document.createElement('button'); edit.type='button'; edit.textContent='Edit';
-            const dup=document.createElement('button'); dup.type='button'; dup.textContent='Duplicate';
+        function renderThemeRow(id,t,isLocked){
+          const row=document.createElement('div');
+          row.className='theme-row';
+          const themeButton=document.createElement('button');
+          themeButton.type='button';
+          themeButton.className='theme-choice';
+          themeButton.textContent=t.name;
+          themeButton.style.border='1px solid '+t.accent;
+          themeButton.style.background=t.card;
+          themeButton.style.color=t.text;
+          themeButton.onclick=()=>{applyTheme(id);picker.classList.remove('show');};
+          const actions=document.createElement('span');
+          actions.className='theme-actions';
+
+          const duplicate=document.createElement('button');
+          duplicate.type='button'; duplicate.title='Duplicate theme'; duplicate.textContent='⧉';
+          duplicate.onclick=e=>{
+            e.preventDefault();e.stopPropagation();
+            const copy={...t,name:t.name+' Copy'};
+            const newId='custom-'+Date.now();
+            customThemes[newId]=copy;
+            localStorage.setItem('aiGeneratedCustomThemes',JSON.stringify(customThemes));
+            renderAllThemes();
+          };
+          actions.appendChild(duplicate);
+
+          if(!isLocked){
+            const edit=document.createElement('button');
+            edit.type='button'; edit.title='Edit theme'; edit.textContent='✎';
             edit.onclick=e=>{e.preventDefault();e.stopPropagation();editCustomTheme(id);};
-            dup.onclick=e=>{e.preventDefault();e.stopPropagation();duplicateCustomTheme(id);};
-            row.append(edit,dup); picker.appendChild(row);
+            const del=document.createElement('button');
+            del.type='button'; del.title='Delete theme'; del.textContent='×';
+            del.onclick=e=>{
+              e.preventDefault();e.stopPropagation();
+              delete customThemes[id];
+              localStorage.setItem('aiGeneratedCustomThemes',JSON.stringify(customThemes));
+              renderAllThemes();
+            };
+            actions.append(edit,del);
           }
-          picker.appendChild(b);
+          row.append(themeButton,actions);
+          picker.appendChild(row);
         }
 
-        Object.entries(themes).forEach(([id,t])=>addThemeButton(id,t));
-        Object.entries(customThemes).forEach(([id,t])=>addThemeButton(id,t));
+        function renderAllThemes(){
+          picker.querySelectorAll('.theme-row').forEach(x=>x.remove());
+          Object.entries(themes).forEach(([id,t])=>renderThemeRow(id,t,true));
+          Object.entries(customThemes).forEach(([id,t])=>renderThemeRow(id,t,false));
+        }
+
+
+        renderAllThemes();
 
         const customTitle=document.createElement('div');
         customTitle.className='custom-theme-title';
@@ -1244,7 +1278,8 @@
         const createButton=form.querySelector('#createCustomTheme');
         createButton.onclick=()=>{
           const name=form.querySelector('#customThemeName').value.trim() || 'My Theme';
-          const id='custom-'+Date.now();
+          const editingId=createButton.dataset.editingId;
+          const id=editingId || 'custom-'+Date.now();
           const t={
             name,
             bg:form.querySelector('#customThemeBg').value,
@@ -1254,8 +1289,10 @@
           };
           customThemes[id]=t;
           localStorage.setItem('aiGeneratedCustomThemes',JSON.stringify(customThemes));
-          addThemeButton(id,t);
+          delete createButton.dataset.editingId;
+          createButton.textContent='Save Custom Theme';
           form.querySelector('#customThemeName').value='';
+          renderAllThemes();
           applyTheme(id);
         };
 
@@ -1547,7 +1584,7 @@
       }
       // Focus the user's chosen startup widget/input.
       const startupFocus = localStorage.getItem('startupFocus') || 'duckInput';
-      const startupTarget = document.getElementById(startupFocus);
+      const startupTarget = document.getElementById(startupFocus) || document.querySelector('[data-startup-focus="'+startupFocus+'"] input, [data-startup-focus="'+startupFocus+'"] textarea');
       if (startupTarget && typeof startupTarget.focus === 'function') startupTarget.focus();
     });
 
