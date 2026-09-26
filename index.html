@@ -90,10 +90,14 @@
     }
 
     /* Theme picker */
-    #theme-toolbar-button { position: fixed; top: 20px; right: 20px; z-index: 5000; }
+    #theme-picker-toggle {
+      position: fixed; top: 20px; right: 20px; z-index: 5000;
+      padding: 10px 14px !important; cursor: pointer !important;
+    }
     #theme-picker {
       position: fixed; top: 62px; right: 20px; z-index: 7000;
-      display: none; width: 220px; padding: 10px; border-radius: 16px;
+      display: none; width: min(280px, 90vw); max-height: 80vh; overflow-y: auto;
+      padding: 12px; border-radius: 16px;
       background: rgba(20,20,30,.97); border: 1px solid rgba(255,255,255,.18);
       box-shadow: 0 15px 45px rgba(0,0,0,.45); backdrop-filter: blur(10px);
     }
@@ -101,6 +105,24 @@
     #theme-picker button {
       width: 100%; margin: 4px 0; padding: 10px 12px;
       text-align: left; border-radius: 10px; cursor: pointer;
+    }
+    .custom-theme-title {
+      margin: 14px 2px 7px; padding-top: 10px;
+      border-top: 1px solid rgba(255,255,255,.14); font-weight: 700;
+    }
+    .custom-theme-form { display:flex; flex-direction:column; gap:7px; }
+    .custom-theme-form > input {
+      box-sizing:border-box; width:100%; padding:9px 10px;
+      border-radius:9px; border:1px solid rgba(255,255,255,.15);
+      background:rgba(255,255,255,.08); color:white;
+    }
+    .custom-theme-form label {
+      display:flex; align-items:center; justify-content:space-between;
+      font-size:13px; padding:3px 2px;
+    }
+    .custom-theme-form input[type="color"] {
+      width:42px; height:28px; padding:0; border:0; background:none;
+      cursor:pointer;
     }
 
     @media (max-width: 800px) {
@@ -997,9 +1019,13 @@
           ocean: { name:'Ocean', bg:'#06151a', card:'rgba(0,180,210,.11)', text:'#e7fcff', accent:'#35d9e8' },
           monochrome: { name:'Monochrome', bg:'#111', card:'rgba(255,255,255,.08)', text:'#fff', accent:'#fff' }
         };
+        let customThemes = {};
+        try { customThemes = JSON.parse(localStorage.getItem('aiGeneratedCustomThemes') || '{}'); } catch {}
+
         const key='aiGeneratedWebsiteTheme';
+
         function applyTheme(name) {
-          const t=themes[name]||themes.default;
+          const t=themes[name] || customThemes[name] || themes.default;
           document.body.style.background=t.bg;
           document.body.style.color=t.text;
           document.documentElement.style.setProperty('--theme-accent',t.accent);
@@ -1009,22 +1035,71 @@
           });
           localStorage.setItem(key,name);
         }
-        const button=document.createElement('button');
-        button.id='theme-toolbar-button'; button.type='button'; button.textContent='🎨 Themes';
-        document.body.appendChild(button);
+
         const picker=document.createElement('div');
         picker.id='theme-picker';
         picker.innerHTML='<strong>Choose a theme</strong>';
-        Object.entries(themes).forEach(([id,t])=>{
-          const b=document.createElement('button'); b.type='button'; b.textContent=t.name;
-          b.style.border='1px solid '+t.accent; b.style.background=t.card; b.style.color=t.text;
+
+        function addThemeButton(id,t) {
+          const b=document.createElement('button');
+          b.type='button'; b.textContent=t.name;
+          b.style.border='1px solid '+t.accent;
+          b.style.background=t.card; b.style.color=t.text;
           b.onclick=()=>{applyTheme(id);picker.classList.remove('show');};
           picker.appendChild(b);
-        });
+        }
+
+        Object.entries(themes).forEach(([id,t])=>addThemeButton(id,t));
+        Object.entries(customThemes).forEach(([id,t])=>addThemeButton(id,t));
+
+        const customTitle=document.createElement('div');
+        customTitle.className='custom-theme-title';
+        customTitle.textContent='Custom Theme';
+        picker.appendChild(customTitle);
+
+        const form=document.createElement('div');
+        form.className='custom-theme-form';
+        form.innerHTML=
+          '<input id="customThemeName" placeholder="Theme name">' +
+          '<label>Background <input id="customThemeBg" type="color" value="#0b0d12"></label>' +
+          '<label>Card <input id="customThemeCard" type="color" value="#252833"></label>' +
+          '<label>Text <input id="customThemeText" type="color" value="#ffffff"></label>' +
+          '<label>Accent <input id="customThemeAccent" type="color" value="#00e5ff"></label>' +
+          '<button type="button" id="createCustomTheme">Save Custom Theme</button>';
+        picker.appendChild(form);
+
+        const createButton=form.querySelector('#createCustomTheme');
+        createButton.onclick=()=>{
+          const name=form.querySelector('#customThemeName').value.trim() || 'My Theme';
+          const id='custom-'+Date.now();
+          const t={
+            name,
+            bg:form.querySelector('#customThemeBg').value,
+            card:form.querySelector('#customThemeCard').value,
+            text:form.querySelector('#customThemeText').value,
+            accent:form.querySelector('#customThemeAccent').value
+          };
+          customThemes[id]=t;
+          localStorage.setItem('aiGeneratedCustomThemes',JSON.stringify(customThemes));
+          addThemeButton(id,t);
+          form.querySelector('#customThemeName').value='';
+          applyTheme(id);
+        };
+
         document.body.appendChild(picker);
-        button.onclick=e=>{e.preventDefault();e.stopPropagation();picker.classList.toggle('show');};
-        applyTheme(localStorage.getItem(key)||'default');
+        const current=localStorage.getItem(key)||'default';
+        applyTheme(current);
       })();
+
+      const themeToggle=document.createElement('button');
+      themeToggle.id='theme-picker-toggle';
+      themeToggle.type='button';
+      themeToggle.textContent='🎨 Themes';
+      themeToggle.onclick=e=>{
+        e.preventDefault(); e.stopPropagation();
+        document.getElementById('theme-picker').classList.toggle('show');
+      };
+      document.body.appendChild(themeToggle);
 
       // Keep the canvas tall enough after a window resize without touching widget positions.
       window.addEventListener('resize',updateCanvasHeight);
