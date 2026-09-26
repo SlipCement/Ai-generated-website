@@ -424,6 +424,7 @@
     }
     #widget-toolbar button { margin: 0 !important; padding: 10px 14px !important; cursor: pointer !important; }
     #widget-toolbar .widget-edit-control { display: none !important; }
+    #widget-toolbar #widget-snap-toggle { display:block !important; }
     #widget-toolbar #widget-snap-toggle {
       min-width: 120px;
     }
@@ -889,7 +890,7 @@
       toolbar.innerHTML='<button type="button" id="widget-edit-toggle">Edit Widgets</button>' +
         '<button type="button" class="widget-edit-control" id="widget-add-button">＋ Add Widget</button>' +
         '<button type="button" class="widget-edit-control" id="widget-reset-button">Reset Widgets</button>' +
-        '<button type="button" class="widget-edit-control" id="widget-snap-toggle">🧲 Snap: ON</button>';
+        '<button type="button" id="widget-snap-toggle">🧲 Snap: ON</button>';
       document.body.appendChild(toolbar);
 
       const editButton=document.getElementById('widget-edit-toggle');
@@ -910,6 +911,7 @@
         snapButton.classList.toggle('snap-off',!snapEnabled);
       }
       updateSnapButton();
+      snapButton.addEventListener('pointerdown',ev=>ev.stopPropagation());
       snapButton.addEventListener('click',ev=>{
         ev.preventDefault();ev.stopPropagation();
         snapEnabled=!snapEnabled;
