@@ -434,8 +434,14 @@
     }
 
     .search-engine-change {
+      display: none !important;
       float: right; margin-top: -4px; padding: 6px 9px !important;
       font-size: 12px !important; border-radius: 9px !important;
+      position: relative !important;
+      z-index: 10001 !important;
+    }
+    body.widget-editing .search-engine-change {
+      display: inline-block !important;
     }
     .engine-picker {
       position: absolute; top: 42px; right: 8px; z-index: 10000;
@@ -1148,6 +1154,7 @@
         const e=engines[engineType];
         card.dataset.currentEngine=engineType;
         card.querySelector('.engine-title').textContent=e.title;
+        card.dataset.currentEngine=engineType;
         const input=card.querySelector('input');
         input.placeholder=e.placeholder;
         input.dataset.engine=engineType;
