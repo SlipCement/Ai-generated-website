@@ -608,7 +608,7 @@
     }
 .card.startup-focus-selected { outline: 4px solid currentColor !important; outline-offset: 4px; }
     body.choosing-startup-focus .card { cursor: crosshair !important; }
-</style>
+.theme-row{display:flex;align-items:center;gap:8px;width:100%}.theme-choice{flex:1;min-width:0;text-align:left}.theme-actions{display:inline-flex;flex:0 0 auto;align-items:center;gap:2px}.theme-actions button{border:0;background:transparent;width:26px;height:26px;padding:0;font-size:16px;line-height:1;cursor:pointer}.theme-actions button:hover{transform:scale(1.12)}</style>
 </head>
 <body>
   <div class="bg-glow"></div>
@@ -943,31 +943,20 @@
         const cards=[...document.querySelectorAll('#widget-canvas .card')];
         const oldPointerEvents=cards.map(card=>card.style.pointerEvents);
         cards.forEach(card=>card.style.pointerEvents='none');
-
         const overlay=document.createElement('div');
         overlay.id='startup-focus-overlay';
-        overlay.textContent='Click the widget you want focused on startup';
-        Object.assign(overlay.style,{position:'fixed',inset:'0',zIndex:'99999',cursor:'crosshair',background:'transparent',display:'flex',alignItems:'center',justifyContent:'center',pointerEvents:'auto'});
-        const label=overlay.firstChild;
-        Object.assign(label.style,{padding:'12px 18px',borderRadius:'12px',background:'rgba(0,0,0,.8)',color:'#fff',fontWeight:'700',pointerEvents:'none'});
+        Object.assign(overlay.style,{position:'fixed',inset:'0',zIndex:'99999',cursor:'crosshair',background:'transparent',pointerEvents:'auto'});
         document.body.appendChild(overlay);
-
         const cleanup=()=>{
           cards.forEach((card,i)=>card.style.pointerEvents=oldPointerEvents[i]);
-          overlay.remove();
-          document.body.classList.remove('choosing-startup-focus');
+          overlay.remove(); document.body.classList.remove('choosing-startup-focus');
         };
-        overlay.addEventListener('click',e=>{
-          const x=e.clientX,y=e.clientY;
-          const card=cards.find(card=>{
-            const r=card.getBoundingClientRect();
-            return x>=r.left&&x<=r.right&&y>=r.top&&y<=r.bottom;
-          });
-          if(!card) return;
+        overlay.addEventListener('pointerdown',e=>{
+          const card=cards.find(card=>{const r=card.getBoundingClientRect();return e.clientX>=r.left&&e.clientX<=r.right&&e.clientY>=r.top&&e.clientY<=r.bottom;});
+          if(!card)return;
           const input=card.querySelector('input,textarea');
-          if(!input) return;
-          const focusId=input.id || ('startup-'+Date.now());
-          if(!input.id) input.id=focusId;
+          const focusId=input?.id||card.dataset.widgetId;
+          if(!focusId)return;
           localStorage.setItem('startupFocus',focusId);
           card.classList.add('startup-focus-selected');
           button.textContent='Startup Focus: Set';
