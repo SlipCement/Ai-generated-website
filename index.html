@@ -834,8 +834,10 @@
       const WIDGET_DATA_KEY='aiGeneratedWebsiteWidgetDataV1';
       let widgetData={};
       try { widgetData=JSON.parse(localStorage.getItem(WIDGET_DATA_KEY)||'{}'); } catch {}
+      window._widgetData=widgetData;
 
       function saveWidgetData(){
+        window._widgetData=widgetData;
         localStorage.setItem(WIDGET_DATA_KEY,JSON.stringify(widgetData));
       }
 
@@ -1671,10 +1673,13 @@
         if(!card || !engines[engineType]) return;
         const e=engines[engineType];
         card.dataset.currentEngine=engineType;
-        card.querySelector('.engine-title').textContent=e.title;
+        const savedWidget=window._widgetData?.[card.dataset.widgetId];
+        card.querySelector('.engine-title').textContent=(savedWidget?.type==='search' && savedWidget.text) ? savedWidget.text : e.title;
         card.querySelector('.engine-title').style.color=e.color || '';
-        card.style.border='1px solid '+(e.border || e.color || 'currentColor');
-        card.style.background=e.bg || '';
+        if(!card.dataset.widgetColor){
+          card.style.border='1px solid '+(e.border || e.color || 'currentColor');
+          card.style.background=e.bg || '';
+        }
         card.dataset.currentEngine=engineType;
         const input=card.querySelector('input');
         input.placeholder=e.placeholder;
