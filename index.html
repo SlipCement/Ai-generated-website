@@ -940,24 +940,38 @@
         const button=ev.currentTarget;
         button.textContent='Click a widget...';
         document.body.classList.add('choosing-startup-focus');
-
         const cards=[...document.querySelectorAll('#widget-canvas .card')];
-        const finish=card=>{
-          const input=card.querySelector('input, textarea');
+        const oldPointerEvents=cards.map(card=>card.style.pointerEvents);
+        cards.forEach(card=>card.style.pointerEvents='none');
+
+        const overlay=document.createElement('div');
+        overlay.id='startup-focus-overlay';
+        overlay.textContent='Click the widget you want focused on startup';
+        Object.assign(overlay.style,{position:'fixed',inset:'0',zIndex:'99999',cursor:'crosshair',background:'transparent',display:'flex',alignItems:'center',justifyContent:'center',pointerEvents:'auto'});
+        const label=overlay.firstChild;
+        Object.assign(label.style,{padding:'12px 18px',borderRadius:'12px',background:'rgba(0,0,0,.8)',color:'#fff',fontWeight:'700',pointerEvents:'none'});
+        document.body.appendChild(overlay);
+
+        const cleanup=()=>{
+          cards.forEach((card,i)=>card.style.pointerEvents=oldPointerEvents[i]);
+          overlay.remove();
+          document.body.classList.remove('choosing-startup-focus');
+        };
+        overlay.addEventListener('click',e=>{
+          const x=e.clientX,y=e.clientY;
+          const card=cards.find(card=>{
+            const r=card.getBoundingClientRect();
+            return x>=r.left&&x<=r.right&&y>=r.top&&y<=r.bottom;
+          });
+          if(!card) return;
+          const input=card.querySelector('input,textarea');
           if(!input) return;
           localStorage.setItem('startupFocus',input.id);
           card.classList.add('startup-focus-selected');
           button.textContent='Startup Focus: Set';
-          setTimeout(()=>card.classList.remove('startup-focus-selected'),1200);
-          cards.forEach(x=>x.removeEventListener('pointerdown',choose,true));
-          document.body.classList.remove('choosing-startup-focus');
-        };
-        const choose=e=>{
-          const card=e.currentTarget;
-          e.preventDefault();e.stopPropagation();
-          finish(card);
-        };
-        cards.forEach(card=>card.addEventListener('pointerdown',choose,true));
+          setTimeout(()=>card.classList.remove('startup-focus-selected'),1400);
+          cleanup();
+        });
       });
       document.getElementById('widget-restore-search').addEventListener('click',ev=>{
         ev.preventDefault();ev.stopPropagation();
@@ -1174,6 +1188,15 @@
           b.style.border='1px solid '+t.accent;
           b.style.background=t.card; b.style.color=t.text;
           b.onclick=()=>{applyTheme(id);picker.classList.remove('show');};
+          if(customThemes[id]){
+            const row=document.createElement('span');
+            row.style.display='flex'; row.style.gap='4px';
+            const edit=document.createElement('button'); edit.type='button'; edit.textContent='Edit';
+            const dup=document.createElement('button'); dup.type='button'; dup.textContent='Duplicate';
+            edit.onclick=e=>{e.preventDefault();e.stopPropagation();editCustomTheme(id);};
+            dup.onclick=e=>{e.preventDefault();e.stopPropagation();duplicateCustomTheme(id);};
+            row.append(edit,dup); picker.appendChild(row);
+          }
           picker.appendChild(b);
         }
 
@@ -1195,6 +1218,28 @@
           '<label>Accent <input id="customThemeAccent" type="color" value="#00e5ff"></label>' +
           '<button type="button" id="createCustomTheme">Save Custom Theme</button>';
         picker.appendChild(form);
+
+        function editCustomTheme(id){
+          const t=customThemes[id];
+          if(!t) return;
+          form.querySelector('#customThemeName').value=t.name;
+          form.querySelector('#customThemeBg').value=t.bg;
+          form.querySelector('#customThemeCard').value=t.card;
+          form.querySelector('#customThemeText').value=t.text;
+          form.querySelector('#customThemeAccent').value=t.accent;
+          form.querySelector('#createCustomTheme').textContent='Update Theme';
+          form.querySelector('#createCustomTheme').dataset.editingId=id;
+        }
+
+        function duplicateCustomTheme(id){
+          const t=customThemes[id];
+          if(!t) return;
+          const copy={...t,name:t.name+' Copy'};
+          const newId='custom-'+Date.now();
+          customThemes[newId]=copy;
+          localStorage.setItem('aiGeneratedCustomThemes',JSON.stringify(customThemes));
+          addThemeButton(newId,copy);
+        }
 
         const createButton=form.querySelector('#createCustomTheme');
         createButton.onclick=()=>{
