@@ -298,7 +298,7 @@
       position: relative !important;
       width: min(1200px, 100%) !important;
       max-width: 1200px !important;
-      min-height: 520px !important;
+      min-height: 900px !important;
       margin: 40px auto 0 !important;
       display: block !important;
     }
@@ -347,6 +347,10 @@
       touch-action: none !important; z-index: 100 !important;
     }
     .widget-drag-handle:active { cursor: grabbing !important; }
+    .widget-ready[data-widget-id^="engine-"] .widget-drag-handle {
+      font-size: 17px !important;
+    }
+
 
     body.widget-editing .widget-remove-button {
       display: block !important;
@@ -434,20 +438,20 @@
       font-size: 12px !important; border-radius: 9px !important;
     }
     .engine-picker {
-      position: absolute; top: 48px; right: 20px; z-index: 4000;
+      position: absolute; top: 42px; right: 8px; z-index: 10000;
       display: none; min-width: 180px; padding: 8px;
       border-radius: 12px; background: rgba(20,20,30,.97);
       border: 1px solid rgba(255,255,255,.18);
       box-shadow: 0 15px 40px rgba(0,0,0,.4);
     }
-    .engine-picker.show { display: block; }
+.engine-picker.show { display: block; }
     .engine-picker button {
       display: block; width: 100%; margin: 3px 0; text-align: left;
       background: rgba(255,255,255,.08);
     }
 
     @media (max-width: 800px) {
-      .tools { min-height: 1050px !important; }
+      .tools { min-height: 1500px !important; }
     }
     /* Suggestions dropdown styles */
     .suggestions-dropdown {
@@ -645,8 +649,8 @@
 
     // Widget dashboard
     (() => {
-      const POS_KEY = 'aiGeneratedWebsiteWidgetPositionsV4';
-      const REMOVED_KEY = 'aiGeneratedWebsiteRemovedWidgetsV4';
+      const POS_KEY = 'aiGeneratedWebsiteWidgetPositionsV5';
+      const REMOVED_KEY = 'aiGeneratedWebsiteRemovedWidgetsV5';
       const EDITING_KEY = 'aiGeneratedWebsiteWidgetEditing';
       let positions = {};
       let removed = new Set();
@@ -663,20 +667,47 @@
 
       const canvas = document.querySelector('.tools');
 
+      // Search engines are widgets too. Move them into the same independent
+      // canvas so they can be dragged, resized, hidden, and reset exactly
+      // like the other widgets.
+      const searchGrid = document.querySelector('.search-grid');
+      const engineCards = searchGrid ? [...searchGrid.querySelectorAll('.card')] : [];
+      const engineTypes = ['duck','google','youtube','wiki'];
+      engineCards.forEach((card,i) => {
+        const type = engineTypes[i];
+        if (!type) return;
+        card.dataset.widgetId = 'engine-' + type;
+        card.classList.remove('wide-card','small-card');
+        canvas.appendChild(card);
+      });
+      if (searchGrid) searchGrid.remove();
+
       function defaultPosition(id, index) {
         const wide = window.innerWidth > 800;
         const gap = 20;
         const cardW = 400;
-        if (!wide) return { x: 0, y: index * 245 };
+        if (!wide) {
+          return { x: 0, y: index * 245 };
+        }
         const center = Math.max(0, (canvas.clientWidth - (cardW * 2 + gap)) / 2);
-        if (id === 'clock') return { x: center, y: 0 };
-        if (id === 'notes') return { x: center + cardW + gap, y: 0 };
-        if (id === 'github') return { x: Math.max(0, (canvas.clientWidth - cardW) / 2), y: 270 };
-        return { x: 0, y: Math.ceil((index + 1) / 2) * 245 };
+
+        const defaults = {
+          'engine-duck':   { x: center, y: 0 },
+          'engine-google': { x: center + cardW + gap, y: 0 },
+          'engine-youtube':{ x: center, y: 245 },
+          'engine-wiki':   { x: center + cardW + gap, y: 245 },
+          'clock':         { x: center, y: 490 },
+          'notes':         { x: center + cardW + gap, y: 490 },
+          'github':        { x: center, y: 760 }
+        };
+        return defaults[id] || {
+          x: center,
+          y: 760 + Math.max(0,index-6) * 245
+        };
       }
 
       function updateCanvasHeight() {
-        let bottom = 520;
+        let bottom = 900;
         canvas.querySelectorAll('.card.widget-ready').forEach(card => {
           const top = parseFloat(card.style.getPropertyValue('--widget-top')) || 0;
           const y = parseFloat(card.style.getPropertyValue('--widget-y')) || 0;
@@ -701,7 +732,7 @@
         const y = Number.isFinite(saved.y) ? saved.y : 0;
         const left = Number.isFinite(saved.left) ? saved.left : def.x;
         const top = Number.isFinite(saved.top) ? saved.top : def.y;
-        const width = Number.isFinite(saved.w) ? saved.w : (id === 'github' ? 400 : 400);
+        const width = Number.isFinite(saved.w) ? saved.w : 400;
         const height = Number.isFinite(saved.h) ? saved.h : null;
 
         card.style.setProperty('--widget-left', left + 'px');
@@ -777,7 +808,7 @@
         });
       }
 
-      document.querySelectorAll('.tools .card').forEach((card,i)=>setupWidget(card,i));
+      canvas.querySelectorAll('.card').forEach((card,i)=>setupWidget(card,i));
       updateCanvasHeight();
 
       const toolbar=document.createElement('div');
@@ -1112,7 +1143,7 @@
       const saved=JSON.parse(localStorage.getItem('searchCardEngines')||'{}');
 
       function applyEngine(cardType,engineType) {
-        const card=[...document.querySelectorAll('.search-grid .card')].find(el => (el.getAttribute('onclick') || '').includes("handleCardClick('" + cardType + "'"));
+        const card=document.querySelector('[data-widget-id="engine-' + cardType + '"]');
         if(!card || !engines[engineType]) return;
         const e=engines[engineType];
         card.dataset.currentEngine=engineType;
