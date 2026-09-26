@@ -353,8 +353,15 @@
     .card.widget-ready:hover {
       transform: translate(var(--widget-x, 0px), var(--widget-y, 0px)) translateY(-5px) scale(1.02);
     }
-    .card.widget-ready.is-dragging,
-    .card.widget-ready.is-resizing {
+    body.widget-editing .tools {
+      background-image:
+        linear-gradient(rgba(255,255,255,.055) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.055) 1px, transparent 1px);
+      background-size: 20px 20px;
+      border-radius: 18px;
+    }
+    body.widget-editing .card.widget-ready.is-dragging,
+    body.widget-editing .card.widget-ready.is-resizing {
       transition: none !important;
       transform: translate(var(--widget-x, 0px), var(--widget-y, 0px)) !important;
       z-index: 2000 !important;
@@ -417,6 +424,13 @@
     }
     #widget-toolbar button { margin: 0 !important; padding: 10px 14px !important; cursor: pointer !important; }
     #widget-toolbar .widget-edit-control { display: none !important; }
+    #widget-toolbar #widget-snap-toggle {
+      min-width: 120px;
+    }
+    #widget-toolbar #widget-snap-toggle.snap-off {
+      opacity: .7;
+      filter: grayscale(.5);
+    }
     body.widget-editing #widget-toolbar .widget-edit-control { display: block !important; }
 
     #widget-picker {
@@ -805,6 +819,10 @@
         card.dataset.widgetReady='true';
 
         let action=null,pointerId=null,sx=0,sy=0,startX=0,startY=0,startW=0,startH=0;
+        const SNAP_KEY='aiGeneratedWidgetSnap';
+        let snapEnabled=localStorage.getItem(SNAP_KEY)!=='0';
+        const SNAP_SIZE=20;
+        const snap=n=>snapEnabled ? Math.round(n/SNAP_SIZE)*SNAP_SIZE : Math.round(n);
 
         function begin(ev,type) {
           if (!document.body.classList.contains('widget-editing')) return;
@@ -823,11 +841,11 @@
           ev.preventDefault(); ev.stopPropagation();
           const dx=ev.clientX-sx, dy=ev.clientY-sy;
           if(action==='move'){
-            card.style.setProperty('--widget-x',(startX+dx)+'px');
-            card.style.setProperty('--widget-y',(startY+dy)+'px');
+            card.style.setProperty('--widget-x',snap(startX+dx)+'px');
+            card.style.setProperty('--widget-y',snap(startY+dy)+'px');
           } else {
-            card.style.setProperty('--widget-width',Math.max(160,Math.round(startW+dx))+'px');
-            card.style.height=Math.max(90,Math.round(startH+dy))+'px';
+            card.style.setProperty('--widget-width',Math.max(160,snap(startW+dx))+'px');
+            card.style.height=Math.max(90,snap(startH+dy))+'px';
           }
           updateCanvasHeight();
         }
@@ -870,7 +888,8 @@
       toolbar.id='widget-toolbar';
       toolbar.innerHTML='<button type="button" id="widget-edit-toggle">Edit Widgets</button>' +
         '<button type="button" class="widget-edit-control" id="widget-add-button">＋ Add Widget</button>' +
-        '<button type="button" class="widget-edit-control" id="widget-reset-button">Reset Widgets</button>';
+        '<button type="button" class="widget-edit-control" id="widget-reset-button">Reset Widgets</button>' +
+        '<button type="button" class="widget-edit-control" id="widget-snap-toggle">🧲 Snap: ON</button>';
       document.body.appendChild(toolbar);
 
       const editButton=document.getElementById('widget-edit-toggle');
@@ -884,6 +903,20 @@
         ev.preventDefault();ev.stopPropagation();
         setEditing(!document.body.classList.contains('widget-editing'));
       });
+
+      const snapButton=document.getElementById('widget-snap-toggle');
+      function updateSnapButton(){
+        snapButton.textContent=snapEnabled?'🧲 Snap: ON':'🧲 Snap: OFF';
+        snapButton.classList.toggle('snap-off',!snapEnabled);
+      }
+      updateSnapButton();
+      snapButton.addEventListener('click',ev=>{
+        ev.preventDefault();ev.stopPropagation();
+        snapEnabled=!snapEnabled;
+        localStorage.setItem(SNAP_KEY,snapEnabled?'1':'0');
+        updateSnapButton();
+      });
+
 
       window.addEventListener('beforeunload',ev=>{
         if(document.body.classList.contains('widget-editing')){
