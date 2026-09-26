@@ -342,7 +342,7 @@
       width: var(--widget-width, 400px) !important;
       height: var(--widget-height, auto) !important;
       min-width: 220px !important;
-      min-height: 130px !important;
+      min-height: 0 !important;
       max-width: none !important;
       margin: 0 !important;
       box-sizing: border-box !important;
@@ -831,7 +831,7 @@
           startX=parseFloat(card.style.getPropertyValue('--widget-x'))||0;
           startY=parseFloat(card.style.getPropertyValue('--widget-y'))||0;
           const r=card.getBoundingClientRect(); startW=r.width; startH=r.height;
-          const contentMinH=Math.max(54, Math.ceil(card.scrollHeight+2));
+          const contentMinH=Math.max(0, Math.ceil(card.scrollHeight+2));
           card.classList.toggle('is-dragging',type==='move');
           card.classList.toggle('is-resizing',type==='resize');
           ev.currentTarget.setPointerCapture?.(pointerId);
@@ -1569,10 +1569,10 @@
         const notesBox = document.getElementById('notesBox');
         if (notesBox) notesBox.value = saved;
       }
-      // Focus the user's chosen startup widget/input.
-      const startupFocus = localStorage.getItem('startupFocus') || 'duckInput';
-      const startupTarget = document.getElementById(startupFocus) || document.querySelector('[data-startup-focus="'+startupFocus+'"] input, [data-startup-focus="'+startupFocus+'"] textarea');
-      if (startupTarget && typeof startupTarget.focus === 'function') startupTarget.focus();
+      // Always focus DuckDuckGo on startup.
+      localStorage.removeItem('startupFocus');
+      const duckInput=document.getElementById('duckInput');
+      if (duckInput) duckInput.focus();
     });
 
     // Add Enter/Return key support for search inputs
