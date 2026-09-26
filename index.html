@@ -435,6 +435,9 @@
     }
     body.widget-editing #widget-toolbar .widget-edit-control { display: block !important; }
 
+    #preset-picker{position:fixed;inset:0;z-index:7000;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.55);backdrop-filter:blur(6px)}
+    #preset-picker-panel{width:min(440px,92vw);max-height:85vh;overflow:auto;padding:22px;border-radius:20px;background:#172033;border:1px solid rgba(255,255,255,.2);box-shadow:0 20px 60px rgba(0,0,0,.5);display:flex;flex-direction:column;gap:10px}
+    .preset-row{display:flex;gap:6px;align-items:center}.preset-row button{margin:0!important}.preset-row .preset-load{flex:1;text-align:left}.preset-row .preset-delete{width:42px!important;padding:10px 0!important;background:#e5484d!important}
     #widget-picker {
       position: fixed; inset: 0; z-index: 6000;
       display: flex; align-items: center; justify-content: center;
@@ -1615,6 +1618,53 @@ document.querySelectorAll('input[type="search"]').forEach(input => {
     }, 50);
   });
 });
+    function getWidgetPreset(){
+      return {
+        widgets:[...document.querySelectorAll('#widget-canvas .card.widget-ready')].map(card=>({
+          id:card.dataset.widgetId||'',
+          x:parseFloat(card.style.getPropertyValue('--widget-x'))||0,
+          y:parseFloat(card.style.getPropertyValue('--widget-y'))||0,
+          width:parseFloat(card.style.getPropertyValue('--widget-width'))||card.offsetWidth,
+          height:parseFloat(card.style.getPropertyValue('--widget-height'))||card.offsetHeight
+        })),
+        searchEngines:JSON.parse(localStorage.getItem('searchCardEngines')||'{}')
+      };
+    }
+    function applyWidgetPreset(preset){
+      if(!preset||!Array.isArray(preset.widgets))return;
+      const cards=[...document.querySelectorAll('#widget-canvas .card.widget-ready')];
+      preset.widgets.forEach(item=>{
+        const card=cards.find(x=>x.dataset.widgetId===item.id);
+        if(!card)return;
+        card.style.setProperty('--widget-x',(item.x||0)+'px');
+        card.style.setProperty('--widget-y',(item.y||0)+'px');
+        if(Number.isFinite(item.width))card.style.setProperty('--widget-width',item.width+'px');
+        if(Number.isFinite(item.height))card.style.setProperty('--widget-height',item.height+'px');
+      });
+      if(preset.searchEngines) localStorage.setItem('searchCardEngines',JSON.stringify(preset.searchEngines));
+    }
+    function openPresets(){
+      const presets=JSON.parse(localStorage.getItem('aiGeneratedWidgetPresets')||'{}');
+      const overlay=document.createElement('div');overlay.id='preset-picker';
+      const panel=document.createElement('div');panel.id='preset-picker-panel';
+      panel.innerHTML='<h2>Widget Presets</h2><p style="opacity:.7">Save and load widget positions, sizes, and search-engine choices.</p>';
+      const list=document.createElement('div');
+      Object.keys(presets).forEach(name=>{
+        const row=document.createElement('div');row.className='preset-row';
+        const load=document.createElement('button');load.className='preset-load';load.textContent=name;
+        load.onclick=()=>{applyWidgetPreset(presets[name]);overlay.remove();};
+        const del=document.createElement('button');del.className='preset-delete';del.textContent='×';del.title='Delete preset';
+        del.onclick=()=>{delete presets[name];localStorage.setItem('aiGeneratedWidgetPresets',JSON.stringify(presets));overlay.remove();openPresets();};
+        row.append(load,del);list.append(row);
+      });
+      const name=document.createElement('input');name.placeholder='Preset name...';
+      const save=document.createElement('button');save.textContent='Save Current Layout';
+      save.onclick=()=>{const n=name.value.trim()||'Preset '+(Object.keys(presets).length+1);presets[n]=getWidgetPreset();localStorage.setItem('aiGeneratedWidgetPresets',JSON.stringify(presets));overlay.remove();};
+      const close=document.createElement('button');close.textContent='Close';close.onclick=()=>overlay.remove();
+      panel.append(list,name,save,close);overlay.append(panel);document.body.append(overlay);
+    }
+    document.getElementById('widget-presets-button')?.addEventListener('click',openPresets);
+
   </script>
 </body>
 </html>
