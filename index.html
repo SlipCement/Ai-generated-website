@@ -147,6 +147,9 @@
       transition: 0.3s ease;
       box-shadow: 0 10px 30px rgba(0,0,0,0.3);
       position: relative;
+      height: var(--widget-height, auto);
+      width: var(--widget-width, auto);
+      box-sizing: border-box;
     }
 
     .card:hover {
@@ -193,7 +196,7 @@
       padding: 12px 16px;
       border-radius: 12px;
       cursor: pointer;
-      background: linear-gradient(135deg, #22c55e, #15803d);
+      background: linear-gradient(135deg, #86efac 0%, #22c55e 45%, #15803d 100%);
       color: white;
       font-weight: bold;
       transition: 0.2s ease;
@@ -285,7 +288,7 @@
     }
 
     .light button:not(.theme-toggle) {
-      background: linear-gradient(135deg, #4ade80, #166534);
+      background: linear-gradient(135deg, #bbf7d0 0%, #4ade80 45%, #166534 100%);
     }
 
     .light h2 {
