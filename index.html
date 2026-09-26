@@ -810,7 +810,7 @@
         card.style.setProperty('--widget-x', x + 'px');
         card.style.setProperty('--widget-y', y + 'px');
         card.style.setProperty('--widget-width', width + 'px');
-        if (height) card.style.height = height + 'px';
+        if (height) card.style.setProperty('--widget-height', height + 'px');
 
         const drag = document.createElement('button');
         drag.type='button'; drag.className='widget-drag-handle'; drag.textContent='⠿'; drag.title='Drag widget';
@@ -844,7 +844,7 @@
             card.style.setProperty('--widget-y',snap(startY+dy)+'px');
           } else {
             card.style.setProperty('--widget-width',Math.max(160,snap(startW+dx))+'px');
-            card.style.height=Math.max(90,snap(startH+dy))+'px';
+            card.style.setProperty('--widget-height',Math.max(130,snap(startH+dy))+'px');
           }
           updateCanvasHeight();
         }
