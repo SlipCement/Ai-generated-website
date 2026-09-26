@@ -353,13 +353,6 @@
     .card.widget-ready:hover {
       transform: translate(var(--widget-x, 0px), var(--widget-y, 0px)) translateY(-5px) scale(1.02);
     }
-    body.widget-editing .tools {
-      background-image:
-        linear-gradient(rgba(255,255,255,.055) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255,255,255,.055) 1px, transparent 1px);
-      background-size: 20px 20px;
-      border-radius: 18px;
-    }
     body.widget-editing .card.widget-ready.is-dragging,
     body.widget-editing .card.widget-ready.is-resizing {
       transition: none !important;
@@ -908,7 +901,7 @@
 
       const snapButton=document.getElementById('widget-snap-toggle');
       function updateSnapButton(){
-        snapButton.textContent=snapEnabled?'🧲 Snap: ON':'🧲 Snap: OFF';
+        snapButton.textContent=snapEnabled?'Snap: ON':'Snap: OFF';
         snapButton.classList.toggle('snap-off',!snapEnabled);
       }
       updateSnapButton();
