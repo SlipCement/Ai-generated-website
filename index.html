@@ -278,75 +278,26 @@
     }
 
 
-    /* Movable widget support */
-    .card {
-      --drag-x: 0px;
-      --drag-y: 0px;
-      transform: translate(var(--drag-x), var(--drag-y));
-      touch-action: auto;
+    /* Widget dashboard */
+    .tools {
+      display: grid !important;
+      grid-template-columns: minmax(260px, 420px) minmax(260px, 420px) !important;
+      justify-content: center !important;
+      align-items: start !important;
+      gap: 20px !important;
+      width: 100% !important;
     }
+    .tools > div:first-child { display: contents !important; }
+    .tools > .card { grid-column: 1 / -1; justify-self: center; }
 
-    .card:not(.dragging):hover {
-      transform: translate(var(--drag-x), var(--drag-y)) translateY(-5px) scale(1.02);
-    }
-
-    .card.dragging {
-      z-index: 2000;
-      cursor: grabbing;
-      transition: none !important;
-      box-shadow: 0 18px 45px rgba(0,0,0,0.45);
-    }
-
-    .drag-handle {
-      position: absolute;
-      top: 12px;
-      right: 12px;
-      width: 30px;
-      height: 30px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border-radius: 10px;
-      background: rgba(255,255,255,0.08);
-      border: 1px solid rgba(255,255,255,0.1);
-      color: rgba(255,255,255,0.7);
-      cursor: grab;
-      user-select: none;
-      touch-action: none;
-      z-index: 5;
-      font-size: 16px;
-      line-height: 1;
-    }
-
-    .drag-handle:active {
-      cursor: grabbing;
-    }
-
-    .light .drag-handle {
-      color: rgba(0,0,0,0.6);
-      background: rgba(0,0,0,0.06);
-      border-color: rgba(0,0,0,0.08);
-    }
-
-    #resetWidgets {
-      position: fixed;
-      top: 20px;
-      left: 20px;
-      z-index: 1000;
-      background: rgba(255,255,255,0.1);
-      border: 1px solid rgba(255,255,255,0.2);
-      backdrop-filter: blur(10px);
-    }
-
-    /* Widget dashboard controls */
     .card.widget-ready {
       position: relative !important;
-      flex: 0 0 auto !important;
-      max-width: none !important;
+      flex: none !important;
       min-width: 220px !important;
       min-height: 130px !important;
+      max-width: none !important;
       box-sizing: border-box !important;
-      overflow: auto !important;
+      overflow: visible !important;
       transform: translate(var(--widget-x, 0px), var(--widget-y, 0px));
     }
     .card.widget-ready:hover {
@@ -355,62 +306,52 @@
     .card.widget-ready.is-dragging,
     .card.widget-ready.is-resizing {
       transition: none !important;
-      z-index: 2000 !important;
       transform: translate(var(--widget-x, 0px), var(--widget-y, 0px)) !important;
+      z-index: 2000 !important;
     }
 
-    .widget-drag-handle {
-      position: absolute !important;
-      top: 10px !important;
-      right: 48px !important;
-      width: 30px !important;
-      height: 30px !important;
-      padding: 0 !important;
+    .widget-drag-handle,
+    .widget-remove-button,
+    .widget-resize-handle { display: none !important; }
+
+    body.widget-editing .widget-drag-handle {
       display: flex !important;
-      align-items: center !important;
-      justify-content: center !important;
+      position: absolute !important;
+      top: 10px !important; right: 48px !important;
+      width: 30px !important; height: 30px !important;
+      padding: 0 !important; align-items: center !important; justify-content: center !important;
       border-radius: 9px !important;
       background: rgba(255,255,255,.12) !important;
       border: 1px solid rgba(255,255,255,.18) !important;
       color: rgba(255,255,255,.85) !important;
-      cursor: grab !important;
-      user-select: none !important;
-      touch-action: none !important;
-      z-index: 100 !important;
+      cursor: grab !important; user-select: none !important;
+      touch-action: none !important; z-index: 100 !important;
     }
     .widget-drag-handle:active { cursor: grabbing !important; }
 
-    .widget-remove-button {
+    body.widget-editing .widget-remove-button {
+      display: block !important;
       position: absolute !important;
-      top: 10px !important;
-      right: 10px !important;
-      width: 30px !important;
-      height: 30px !important;
-      min-width: 30px !important;
-      min-height: 30px !important;
-      margin: 0 !important;
-      padding: 0 !important;
+      top: 10px !important; right: 10px !important;
+      width: 30px !important; height: 30px !important;
+      min-width: 30px !important; min-height: 30px !important;
+      margin: 0 !important; padding: 0 !important;
       border-radius: 9px !important;
       background: #e5484d !important;
       border: 1px solid rgba(255,255,255,.35) !important;
-      color: #fff !important;
-      cursor: pointer !important;
-      font-size: 21px !important;
-      line-height: 28px !important;
-      text-align: center !important;
-      z-index: 101 !important;
+      color: #fff !important; cursor: pointer !important;
+      font-size: 21px !important; line-height: 28px !important;
+      text-align: center !important; z-index: 101 !important;
       touch-action: manipulation !important;
     }
-    .widget-remove-button:hover { background: #c9363d !important; }
+    body.widget-editing .widget-remove-button:hover { background: #c9363d !important; }
 
-    .widget-resize-handle {
+    body.widget-editing .widget-resize-handle {
+      display: block !important;
       position: absolute !important;
-      right: 7px !important;
-      bottom: 7px !important;
-      width: 24px !important;
-      height: 24px !important;
-      cursor: nwse-resize !important;
-      touch-action: none !important;
+      right: 7px !important; bottom: 7px !important;
+      width: 24px !important; height: 24px !important;
+      cursor: nwse-resize !important; touch-action: none !important;
       z-index: 100 !important;
       border-right: 3px solid rgba(255,255,255,.8) !important;
       border-bottom: 3px solid rgba(255,255,255,.8) !important;
@@ -418,42 +359,42 @@
     }
 
     #widget-toolbar {
-      position: fixed;
-      top: 20px;
-      left: 20px;
-      z-index: 5000;
-      display: flex;
-      gap: 8px;
+      position: fixed; top: 20px; left: 20px; z-index: 5000;
+      display: flex; gap: 8px; flex-wrap: wrap;
     }
-    #widget-toolbar button {
-      margin: 0 !important;
-      padding: 10px 14px !important;
-      cursor: pointer !important;
-    }
+    #widget-toolbar button { margin: 0 !important; padding: 10px 14px !important; cursor: pointer !important; }
+    #widget-toolbar .widget-edit-control { display: none !important; }
+    body.widget-editing #widget-toolbar .widget-edit-control { display: block !important; }
+
     #widget-picker {
-      position: fixed;
-      inset: 0;
-      z-index: 6000;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: rgba(0,0,0,.5);
-      backdrop-filter: blur(6px);
+      position: fixed; inset: 0; z-index: 6000;
+      display: flex; align-items: center; justify-content: center;
+      background: rgba(0,0,0,.5); backdrop-filter: blur(6px);
     }
     #widget-picker-panel {
-      width: min(360px, 90vw);
-      padding: 22px;
-      border-radius: 20px;
-      background: #172033;
-      border: 1px solid rgba(255,255,255,.2);
+      width: min(360px,90vw); padding: 22px; border-radius: 20px;
+      background: #172033; border: 1px solid rgba(255,255,255,.2);
       box-shadow: 0 20px 60px rgba(0,0,0,.5);
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
+      display: flex; flex-direction: column; gap: 10px;
     }
-    #widget-picker-panel button {
-      width: 100%;
-      margin: 0;
+    #widget-picker-panel button { width: 100%; margin: 0; }
+
+    .widget-notes {
+      display: flex !important; flex-direction: column !important;
+      overflow: hidden !important;
+    }
+    .widget-notes textarea {
+      flex: 1 1 auto !important;
+      width: 100% !important; min-height: 70px !important; height: auto !important;
+      box-sizing: border-box !important; resize: none !important;
+    }
+    .widget-notes .notes-done {
+      flex: 0 0 auto !important; margin-top: 15px !important; width: 100% !important;
+    }
+
+    @media (max-width: 800px) {
+      .tools { grid-template-columns: minmax(260px,420px) !important; }
+      .tools > .card { grid-column: 1; }
     }
 
     /* Suggestions dropdown styles */
@@ -624,20 +565,20 @@
 
     <div style="display:flex; justify-content:center; gap:20px; flex-wrap:wrap; width:100%;">
 
-      <div class="card" style="flex:1; min-width:260px; max-width:420px;">
+      <div class="card" data-widget-id="clock" style="flex:1; min-width:260px; max-width:420px;">
         <h2>Live Clock</h2>
         <div class="clock" id="clock">00:00:00</div>
       </div>
 
-      <div class="card" style="flex:1; min-width:260px; max-width:420px;">
+      <div class="card widget-notes" data-widget-id="notes" style="flex:1; min-width:260px; max-width:420px;">
         <h2>Quick Notes</h2>
-        <textarea id="notesBox" placeholder="Write something..." style="width:100%; height:120px; border:none; outline:none; resize:none; padding:15px; border-radius:16px;"></textarea>
-        <button style="margin-top:15px; width:100%;" onclick="saveNotes()">Save Notes</button>
+        <textarea id="notesBox" placeholder="Write something..."></textarea>
+        <button class="notes-done" onclick="saveNotes()">Done</button>
       </div>
 
     </div>
 
-    <div class="card" style="width:100%; max-width:420px; border:1px solid #3a3f46; background:rgba(245,245,245,0.05); text-align:center;">
+    <div class="card" data-widget-id="github" style="width:100%; max-width:420px; border:1px solid #3a3f46; background:rgba(245,245,245,0.05); text-align:center;">
       <h2 style="font-size:2rem; margin-bottom:20px;">GitHub</h2>
       <button style="width:100%; background:#24292f; font-size:1.2rem; padding:20px; color: white;" onclick="window.location.href='https://github.com'">Open GitHub</button>
     </div>
@@ -650,10 +591,10 @@
 
   <script>
 
-    // Widget dashboard: independent drag, resize, add and remove
+    // Widget dashboard
     (() => {
-      const POS_KEY = 'aiGeneratedWebsiteWidgetPositionsV2';
-      const REMOVED_KEY = 'aiGeneratedWebsiteRemovedWidgetsV2';
+      const POS_KEY = 'aiGeneratedWebsiteWidgetPositionsV3';
+      const REMOVED_KEY = 'aiGeneratedWebsiteRemovedWidgetsV3';
 
       let positions = {};
       let removed = new Set();
@@ -666,72 +607,49 @@
       };
 
       function setupWidget(card, index) {
-        if (card.dataset.widgetReady === 'true') return;
+        if (!card.closest('.tools') || card.dataset.widgetReady === 'true') return;
 
         const id = card.dataset.widgetId || 'widget-' + index;
         card.dataset.widgetId = id;
-
-        if (removed.has(id)) {
-          card.remove();
-          return;
-        }
+        if (removed.has(id)) { card.remove(); return; }
 
         card.classList.add('widget-ready');
-
-        // Freeze each widget's own starting size so flexbox cannot couple widget sizes.
         const initial = card.getBoundingClientRect();
         const saved = positions[id] || {};
-        if (!saved.w) card.style.width = Math.round(initial.width) + 'px';
-        if (!saved.h && initial.height) card.style.height = Math.round(initial.height) + 'px';
 
+        if (!saved.w) card.style.width = Math.round(initial.width) + 'px';
+        if (!saved.h) card.style.height = Math.round(initial.height) + 'px';
         card.style.setProperty('--widget-x', (Number(saved.x) || 0) + 'px');
         card.style.setProperty('--widget-y', (Number(saved.y) || 0) + 'px');
         if (saved.w) card.style.width = saved.w + 'px';
         if (saved.h) card.style.height = saved.h + 'px';
 
-        const dragHandle = document.createElement('button');
-        dragHandle.type = 'button';
-        dragHandle.className = 'widget-drag-handle';
-        dragHandle.textContent = '⠿';
-        dragHandle.title = 'Drag widget';
-        dragHandle.setAttribute('aria-label', 'Drag widget');
+        const drag = document.createElement('button');
+        drag.type = 'button'; drag.className = 'widget-drag-handle';
+        drag.textContent = '⠿'; drag.title = 'Drag widget';
 
-        const removeButton = document.createElement('button');
-        removeButton.type = 'button';
-        removeButton.className = 'widget-remove-button';
-        removeButton.textContent = '×';
-        removeButton.title = 'Remove widget';
-        removeButton.setAttribute('aria-label', 'Remove widget');
+        const close = document.createElement('button');
+        close.type = 'button'; close.className = 'widget-remove-button';
+        close.textContent = '×'; close.title = 'Remove widget';
 
-        const resizeHandle = document.createElement('div');
-        resizeHandle.className = 'widget-resize-handle';
-        resizeHandle.title = 'Resize widget';
-        resizeHandle.setAttribute('aria-label', 'Resize widget');
+        const resize = document.createElement('div');
+        resize.className = 'widget-resize-handle'; resize.title = 'Resize widget';
 
-        card.append(dragHandle, removeButton, resizeHandle);
+        card.append(drag, close, resize);
         card.dataset.widgetReady = 'true';
 
-        let action = null;
-        let pointerId = null;
-        let startPointerX = 0;
-        let startPointerY = 0;
-        let startX = 0;
-        let startY = 0;
-        let startW = 0;
-        let startH = 0;
+        let action = null, pointerId = null;
+        let sx = 0, sy = 0, startX = 0, startY = 0, startW = 0, startH = 0;
 
         function begin(ev, type) {
-          ev.preventDefault();
-          ev.stopPropagation();
-          action = type;
-          pointerId = ev.pointerId;
-          startPointerX = ev.clientX;
-          startPointerY = ev.clientY;
-          startX = Number.parseFloat(card.style.getPropertyValue('--widget-x')) || 0;
-          startY = Number.parseFloat(card.style.getPropertyValue('--widget-y')) || 0;
-          startW = card.getBoundingClientRect().width;
-          startH = card.getBoundingClientRect().height;
-
+          if (!document.body.classList.contains('widget-editing')) return;
+          ev.preventDefault(); ev.stopPropagation();
+          action = type; pointerId = ev.pointerId;
+          sx = ev.clientX; sy = ev.clientY;
+          startX = parseFloat(card.style.getPropertyValue('--widget-x')) || 0;
+          startY = parseFloat(card.style.getPropertyValue('--widget-y')) || 0;
+          const r = card.getBoundingClientRect();
+          startW = r.width; startH = r.height;
           card.classList.toggle('is-dragging', type === 'move');
           card.classList.toggle('is-resizing', type === 'resize');
           ev.currentTarget.setPointerCapture?.(pointerId);
@@ -739,126 +657,105 @@
 
         function move(ev) {
           if (!action || ev.pointerId !== pointerId) return;
-          ev.preventDefault();
-          ev.stopPropagation();
-
-          const dx = ev.clientX - startPointerX;
-          const dy = ev.clientY - startPointerY;
+          ev.preventDefault(); ev.stopPropagation();
+          const dx = ev.clientX - sx, dy = ev.clientY - sy;
 
           if (action === 'move') {
             card.style.setProperty('--widget-x', (startX + dx) + 'px');
             card.style.setProperty('--widget-y', (startY + dy) + 'px');
           } else {
-            const maxW = Math.max(220, window.innerWidth - 20);
-            const maxH = Math.max(130, window.innerHeight - 20);
-            const newW = Math.min(maxW, Math.max(220, startW + dx));
-            const newH = Math.min(maxH, Math.max(130, startH + dy));
-            card.style.width = Math.round(newW) + 'px';
-            card.style.height = Math.round(newH) + 'px';
+            card.style.width = Math.max(220, Math.round(startW + dx)) + 'px';
+            card.style.height = Math.max(130, Math.round(startH + dy)) + 'px';
           }
         }
 
         function end(ev) {
           if (!action || ev.pointerId !== pointerId) return;
-          ev.preventDefault();
-          ev.stopPropagation();
+          ev.preventDefault(); ev.stopPropagation();
 
           if (action === 'move') {
-            positions[id] = {
-              ...(positions[id] || {}),
-              x: Number.parseFloat(card.style.getPropertyValue('--widget-x')) || 0,
-              y: Number.parseFloat(card.style.getPropertyValue('--widget-y')) || 0
-            };
+            positions[id] = {...(positions[id] || {}),
+              x: parseFloat(card.style.getPropertyValue('--widget-x')) || 0,
+              y: parseFloat(card.style.getPropertyValue('--widget-y')) || 0};
           } else {
-            positions[id] = {
-              ...(positions[id] || {}),
+            positions[id] = {...(positions[id] || {}),
               w: card.getBoundingClientRect().width,
-              h: card.getBoundingClientRect().height
-            };
+              h: card.getBoundingClientRect().height};
           }
 
           save();
           card.classList.remove('is-dragging', 'is-resizing');
           try { ev.currentTarget.releasePointerCapture?.(pointerId); } catch {}
-          action = null;
-          pointerId = null;
+          action = null; pointerId = null;
         }
 
-        dragHandle.addEventListener('pointerdown', ev => begin(ev, 'move'));
-        resizeHandle.addEventListener('pointerdown', ev => begin(ev, 'resize'));
-        dragHandle.addEventListener('pointermove', move);
-        resizeHandle.addEventListener('pointermove', move);
-        dragHandle.addEventListener('pointerup', end);
-        resizeHandle.addEventListener('pointerup', end);
-        dragHandle.addEventListener('pointercancel', end);
-        resizeHandle.addEventListener('pointercancel', end);
+        drag.addEventListener('pointerdown', ev => begin(ev,'move'));
+        resize.addEventListener('pointerdown', ev => begin(ev,'resize'));
+        drag.addEventListener('pointermove', move);
+        resize.addEventListener('pointermove', move);
+        drag.addEventListener('pointerup', end);
+        resize.addEventListener('pointerup', end);
+        drag.addEventListener('pointercancel', end);
+        resize.addEventListener('pointercancel', end);
 
-        removeButton.addEventListener('pointerdown', ev => {
-          ev.preventDefault();
-          ev.stopPropagation();
-        });
-        removeButton.addEventListener('click', ev => {
-          ev.preventDefault();
-          ev.stopPropagation();
-          removed.add(id);
-          delete positions[id];
-          save();
-          card.remove();
+        close.addEventListener('pointerdown', ev => { ev.preventDefault(); ev.stopPropagation(); });
+        close.addEventListener('click', ev => {
+          ev.preventDefault(); ev.stopPropagation();
+          removed.add(id); delete positions[id]; save(); card.remove();
         });
       }
 
-      document.querySelectorAll('.card').forEach((card, i) => setupWidget(card, i));
+      document.querySelectorAll('.tools .card').forEach((card,i) => setupWidget(card,i));
 
-      // One toolbar only.
       const toolbar = document.createElement('div');
       toolbar.id = 'widget-toolbar';
-      toolbar.innerHTML = '<button type="button" id="widget-add-button">＋ Add Widget</button>' +
-                          '<button type="button" id="widget-reset-button">Reset Widgets</button>';
+      toolbar.innerHTML =
+        '<button type="button" id="widget-edit-toggle">Edit Widgets</button>' +
+        '<button type="button" class="widget-edit-control" id="widget-add-button">＋ Add Widget</button>' +
+        '<button type="button" class="widget-edit-control" id="widget-reset-button">Reset Widgets</button>';
       document.body.appendChild(toolbar);
 
+      const editButton = document.getElementById('widget-edit-toggle');
+      editButton.addEventListener('click', ev => {
+        ev.preventDefault(); ev.stopPropagation();
+        const editing = document.body.classList.toggle('widget-editing');
+        editButton.textContent = editing ? 'Done Editing' : 'Edit Widgets';
+      });
+
       document.getElementById('widget-reset-button').addEventListener('click', ev => {
-        ev.preventDefault();
-        ev.stopPropagation();
-        localStorage.removeItem(POS_KEY);
-        localStorage.removeItem(REMOVED_KEY);
+        ev.preventDefault(); ev.stopPropagation();
+        localStorage.removeItem(POS_KEY); localStorage.removeItem(REMOVED_KEY);
         location.reload();
       });
 
       document.getElementById('widget-add-button').addEventListener('click', ev => {
-        ev.preventDefault();
-        ev.stopPropagation();
-
-        const old = document.getElementById('widget-picker');
-        if (old) { old.remove(); return; }
+        ev.preventDefault(); ev.stopPropagation();
+        if (document.getElementById('widget-picker')) {
+          document.getElementById('widget-picker').remove(); return;
+        }
 
         const picker = document.createElement('div');
         picker.id = 'widget-picker';
         picker.innerHTML =
-          '<div id="widget-picker-panel">' +
-          '<h3>Add Widget</h3>' +
+          '<div id="widget-picker-panel"><h3>Add Widget</h3>' +
           '<button type="button" data-widget-type="clock">🕐 Live Clock</button>' +
           '<button type="button" data-widget-type="notes">📝 Quick Notes</button>' +
           '<button type="button" data-widget-type="github">🐙 GitHub</button>' +
-          '<button type="button" id="widget-picker-cancel">Cancel</button>' +
-          '</div>';
+          '<button type="button" id="widget-picker-cancel">Cancel</button></div>';
         document.body.appendChild(picker);
 
         picker.querySelector('#widget-picker-cancel').addEventListener('click', ev => {
-          ev.preventDefault();
-          ev.stopPropagation();
-          picker.remove();
+          ev.preventDefault(); ev.stopPropagation(); picker.remove();
         });
 
         picker.querySelectorAll('[data-widget-type]').forEach(button => {
           button.addEventListener('click', ev => {
-            ev.preventDefault();
-            ev.stopPropagation();
+            ev.preventDefault(); ev.stopPropagation();
 
             const type = button.dataset.widgetType;
             const id = 'extra-' + type;
             if (document.querySelector('[data-widget-id="' + id + '"]')) {
-              picker.remove();
-              return;
+              picker.remove(); return;
             }
 
             removed.delete(id);
@@ -867,23 +764,42 @@
             card.dataset.widgetId = id;
 
             if (type === 'clock') {
-              card.innerHTML = '<h2>Live Clock</h2><div class="clock" style="font-size:2rem;">00:00:00</div>';
+              card.innerHTML = '<h2>Live Clock</h2><div class="clock" data-extra-clock>00:00:00</div>';
+              const tick = () => {
+                const el = card.querySelector('[data-extra-clock]');
+                if (el) el.textContent = new Date().toLocaleTimeString();
+              };
+              tick(); setInterval(tick,1000);
             } else if (type === 'notes') {
-              card.innerHTML = '<h2>Quick Notes</h2><textarea placeholder="Write something..." style="width:100%;height:120px;box-sizing:border-box;padding:12px;border-radius:12px;"></textarea>';
+              card.classList.add('widget-notes');
+              card.innerHTML =
+                '<h2>Quick Notes</h2><textarea class="extra-notes-box" placeholder="Write something..."></textarea>' +
+                '<button class="notes-done" type="button">Done</button>';
+              const box = card.querySelector('.extra-notes-box');
+              const key = 'jasperSearchNotesExtra';
+              box.value = localStorage.getItem(key) || '';
+              card.querySelector('.notes-done').addEventListener('click', ev => {
+                ev.preventDefault(); ev.stopPropagation();
+                localStorage.setItem(key, box.value);
+                const b = card.querySelector('.notes-done');
+                b.textContent = 'Saved!';
+                setTimeout(() => { if (b.isConnected) b.textContent = 'Done'; },900);
+              });
             } else {
-              card.innerHTML = '<h2>GitHub</h2><button type="button" style="width:100%;">Open GitHub</button>';
-              card.querySelector('button').addEventListener('click', ev => {
-                ev.preventDefault();
-                ev.stopPropagation();
-                window.location.href = 'https://github.com';
+              card.style.cssText =
+                'width:100%; max-width:420px; border:1px solid #3a3f46; background:rgba(245,245,245,0.05); text-align:center;';
+              card.innerHTML =
+                '<h2 style="font-size:2rem; margin-bottom:20px;">GitHub</h2>' +
+                '<button type="button" class="github-widget-button" style="width:100%; background:#24292f; font-size:1.2rem; padding:20px; color:white;">Open GitHub</button>';
+              card.querySelector('.github-widget-button').addEventListener('click', ev => {
+                ev.preventDefault(); ev.stopPropagation();
+                window.location.href='https://github.com';
               });
             }
 
-            const container = document.querySelector('.tools') || document.body;
-            container.appendChild(card);
-            setupWidget(card, document.querySelectorAll('.card').length - 1);
-            save();
-            picker.remove();
+            document.querySelector('.tools').appendChild(card);
+            setupWidget(card, document.querySelectorAll('.tools .card').length - 1);
+            save(); picker.remove();
           });
         });
       });
@@ -1100,8 +1016,14 @@
     updateClock();
 
     function saveNotes() {
-      localStorage.setItem('jasperSearchNotes', document.getElementById('notesBox').value);
-      alert('Notes saved!');
+      const box = document.getElementById('notesBox');
+      if (!box) return;
+      localStorage.setItem('jasperSearchNotes', box.value);
+      const button = box.parentElement.querySelector('.notes-done');
+      if (button) {
+        button.textContent = 'Saved!';
+        setTimeout(() => { if (button.isConnected) button.textContent = 'Done'; }, 900);
+      }
     }
 
     window.addEventListener('load', () => {
