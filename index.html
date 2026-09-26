@@ -830,6 +830,7 @@
           startX=parseFloat(card.style.getPropertyValue('--widget-x'))||0;
           startY=parseFloat(card.style.getPropertyValue('--widget-y'))||0;
           const r=card.getBoundingClientRect(); startW=r.width; startH=r.height;
+          const contentMinH=Math.max(54, Math.ceil(card.scrollHeight+2));
           card.classList.toggle('is-dragging',type==='move');
           card.classList.toggle('is-resizing',type==='resize');
           ev.currentTarget.setPointerCapture?.(pointerId);
@@ -844,8 +845,7 @@
             card.style.setProperty('--widget-y',snap(startY+dy)+'px');
           } else {
             card.style.setProperty('--widget-width',Math.max(160,snap(startW+dx))+'px');
-            const minH = Math.max(54, Math.ceil(card.scrollHeight + 2));
-            const targetH = Math.max(minH, snap(startH + dy));
+            const targetH = Math.max(contentMinH, snap(startH + dy));
             card.style.setProperty('--widget-height', targetH + 'px');
           }
           updateCanvasHeight();
