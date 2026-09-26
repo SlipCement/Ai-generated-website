@@ -944,14 +944,38 @@
         card.className='card';
         card.dataset.widgetId=id;
         card.dataset.restoredSearch='true';
-        card.innerHTML='<h2>Google Search</h2><div class="search-box-wrapper"><div class="search-box"><input type="search" placeholder="Search Google..." autocomplete="off"><button type="button">Search</button></div><div class="suggestions-dropdown"></div></div>';
+        card.innerHTML='<h2><span class="engine-title">Google Search</span><button type="button" class="search-engine-change" data-engine-card="'+id+'">Change</button></h2><div class="search-box-wrapper"><div class="search-box"><input type="search" placeholder="Search Google..." autocomplete="off"><button type="button">Search</button></div><div class="suggestions-dropdown"></div></div>';
         const input=card.querySelector('input');
         const button=card.querySelector('button');
-        const run=()=>{const q=input.value.trim();if(q) window.location.href='https://www.google.com/search?q='+encodeURIComponent(q);};
+        const run=()=>{const q=input.value.trim();const selected=input.dataset.engine||'google';const e=(window._searchEngines||{})[selected];if(q&&e) window.location.href=e.search+encodeURIComponent(q);};
         button.addEventListener('click',ev=>{ev.preventDefault();ev.stopPropagation();run();});
         input.addEventListener('keypress',ev=>{if(ev.key==='Enter')run();});
         canvas.appendChild(card);
         setupWidget(card,canvas.querySelectorAll('.card').length-1);
+        card.querySelector('.search-engine-change').addEventListener('click',ev=>{
+          ev.preventDefault();ev.stopPropagation();
+          const picker=document.createElement('div'); picker.className='engine-picker';
+          Object.entries(window._searchEngines||{}).forEach(([key,e])=>{
+            const b=document.createElement('button'); b.type='button'; b.textContent=e.name;
+            b.onclick=x=>{x.preventDefault();x.stopPropagation();
+              const old=card.dataset.currentEngine||'google';
+              const input=card.querySelector('input');
+              input.dataset.engine=key;
+              card.querySelector('.engine-title').textContent=e.title;
+              card.querySelector('.engine-title').style.color=e.color||'';
+              card.style.border='1px solid '+(e.border||e.color||'currentColor');
+              card.style.background=e.bg||'';
+              input.placeholder=e.placeholder;
+              card.dataset.currentEngine=key;
+              picker.remove();
+            };
+            picker.appendChild(b);
+          });
+          card.appendChild(picker);
+          picker.classList.add('show');
+        });
+        const initialEngine=(window._searchEngines||{}).google;
+        if(initialEngine){ card.style.border='1px solid '+initialEngine.border; card.style.background=initialEngine.bg; card.querySelector('.engine-title').style.color=initialEngine.color; }
         positions[id]={left:20,top:20,x:0,y:0};
         card.style.setProperty('--widget-left','20px');
         card.style.setProperty('--widget-top','20px');
@@ -1349,13 +1373,13 @@
     // Search engine switcher
     (() => {
       const engines = {
-        google: { name:'Google Search', title:'Google Search', placeholder:'Search Google...', search:'https://www.google.com/search?q=', home:'https://www.google.com' },
-        duck: { name:'DuckDuckGo', title:'DuckDuckGo', placeholder:'Search privately...', search:'https://duckduckgo.com/?q=', home:'https://duckduckgo.com' },
-        bing: { name:'Bing', title:'Bing', placeholder:'Search Bing...', search:'https://www.bing.com/search?q=', home:'https://www.bing.com' },
-        brave: { name:'Brave Search', title:'Brave Search', placeholder:'Search Brave...', search:'https://search.brave.com/search?q=', home:'https://search.brave.com' },
-        yahoo: { name:'Yahoo', title:'Yahoo Search', placeholder:'Search Yahoo...', search:'https://search.yahoo.com/search?p=', home:'https://search.yahoo.com' },
-        youtube: { name:'YouTube', title:'YouTube', placeholder:'Find videos...', search:'https://www.youtube.com/results?search_query=', home:'https://www.youtube.com' },
-        wiki: { name:'Wikipedia', title:'Wikipedia', placeholder:'Search knowledge...', search:'https://en.wikipedia.org/wiki/Special:Search?search=', home:'https://en.wikipedia.org' }
+        google: { name:'Google Search', title:'Google Search', placeholder:'Search Google...', search:'https://www.google.com/search?q=', home:'https://www.google.com', color:'#4285F4', bg:'rgba(66,133,244,0.08)', border:'#2f5fb3' },
+        duck: { name:'DuckDuckGo', title:'DuckDuckGo', placeholder:'Search privately...', search:'https://duckduckgo.com/?q=', home:'https://duckduckgo.com', color:'#E37151', bg:'rgba(227,113,81,0.08)', border:'#b85a41' },
+        bing: { name:'Bing', title:'Bing', placeholder:'Search Bing...', search:'https://www.bing.com/search?q=', home:'https://www.bing.com', color:'#008373', bg:'rgba(0,131,115,0.08)', border:'#00695c' },
+        brave: { name:'Brave Search', title:'Brave Search', placeholder:'Search Brave...', search:'https://search.brave.com/search?q=', home:'https://search.brave.com', color:'#FF6B00', bg:'rgba(255,107,0,0.08)', border:'#c65300' },
+        yahoo: { name:'Yahoo', title:'Yahoo Search', placeholder:'Search Yahoo...', search:'https://search.yahoo.com/search?p=', home:'https://search.yahoo.com', color:'#6001D2', bg:'rgba(96,1,210,0.08)', border:'#4b00a5' },
+        youtube: { name:'YouTube', title:'YouTube', placeholder:'Find videos...', search:'https://www.youtube.com/results?search_query=', home:'https://www.youtube.com', color:'#FF0000', bg:'rgba(255,0,0,0.08)', border:'#b30000' },
+        wiki: { name:'Wikipedia', title:'Wikipedia', placeholder:'Search knowledge...', search:'https://en.wikipedia.org/wiki/Special:Search?search=', home:'https://en.wikipedia.org', color:'#A2A9B1', bg:'rgba(162,169,177,0.08)', border:'#6f767d' }
       };
       const cardTypes=['duck','google','youtube','wiki'];
       const saved=JSON.parse(localStorage.getItem('searchCardEngines')||'{}');
@@ -1366,6 +1390,9 @@
         const e=engines[engineType];
         card.dataset.currentEngine=engineType;
         card.querySelector('.engine-title').textContent=e.title;
+        card.querySelector('.engine-title').style.color=e.color || '';
+        card.style.border='1px solid '+(e.border || e.color || 'currentColor');
+        card.style.background=e.bg || '';
         card.dataset.currentEngine=engineType;
         const input=card.querySelector('input');
         input.placeholder=e.placeholder;
