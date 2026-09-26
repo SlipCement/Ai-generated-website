@@ -18,7 +18,7 @@
       background: linear-gradient(135deg, #0f172a, #1e293b, #111827);
       color: white;
       min-height: 100vh;
-      overflow-x: hidden;
+      overflow-x: auto;
       padding: 30px;
       -webkit-user-select: none;
       user-select: none;
@@ -330,13 +330,29 @@
     /* Widget dashboard */
     .tools {
       position: relative !important;
-      width: min(1200px, 100%) !important;
+      width: max(1200px, 100%) !important;
       max-width: 1200px !important;
       min-height: 900px !important;
       margin: 40px auto 0 !important;
       display: block !important;
     }
     .tools > div:first-child { display: contents !important; }
+
+    /* Keep the dashboard wider than the viewport so the page can scroll
+       horizontally when widgets are dragged/resized past the visible edge. */
+    @media (min-width: 1201px) {
+      .tools { width: 1200px !important; }
+    }
+
+    /* Edited widgets keep a real scrollable content area instead of having
+       their contents rewritten into a clipped card. */
+    .card.widget-ready {
+      overflow: auto;
+      min-height: 80px;
+    }
+    .card.widget-ready textarea {
+      overflow: auto;
+    }
 
     .card.widget-ready {
       position: absolute !important;
@@ -863,6 +879,8 @@
       }
 
       function renderEditableWidget(card,data){
+        const savedHeight=card.style.getPropertyValue('--widget-height');
+        const savedWidth=card.style.getPropertyValue('--widget-width');
         const type=data.type||'text';
         const title=escapeWidgetText(data.title||'Widget');
         const text=escapeWidgetText(data.text||'');
@@ -897,6 +915,11 @@
           card.style.background=data.color;
           card.style.borderColor=data.color;
         }
+        // innerHTML replaces the content, so explicitly restore the dimensions
+        // and overflow state after editing.
+        if(savedHeight) card.style.setProperty('--widget-height',savedHeight);
+        if(savedWidth) card.style.setProperty('--widget-width',savedWidth);
+        card.style.overflow='auto';
       }
 
       function applySavedWidgetData(card){
