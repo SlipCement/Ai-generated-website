@@ -435,10 +435,14 @@
 
     .search-engine-change {
       display: none !important;
-      float: right; margin-top: -4px; padding: 6px 9px !important;
-      font-size: 12px !important; border-radius: 9px !important;
-      position: relative !important;
-      z-index: 10001 !important;
+      position: absolute !important;
+      top: 48px !important;
+      right: 10px !important;
+      margin: 0 !important;
+      padding: 6px 9px !important;
+      font-size: 12px !important;
+      border-radius: 9px !important;
+      z-index: 102 !important;
     }
     body.widget-editing .search-engine-change {
       display: inline-block !important;
@@ -655,8 +659,8 @@
 
     // Widget dashboard
     (() => {
-      const POS_KEY = 'aiGeneratedWebsiteWidgetPositionsV5';
-      const REMOVED_KEY = 'aiGeneratedWebsiteRemovedWidgetsV5';
+      const POS_KEY = 'aiGeneratedWebsiteWidgetPositionsV6';
+      const REMOVED_KEY = 'aiGeneratedWebsiteRemovedWidgetsV6';
       const EDITING_KEY = 'aiGeneratedWebsiteWidgetEditing';
       let positions = {};
       let removed = new Set();
@@ -797,6 +801,8 @@
             h:card.getBoundingClientRect().height};
           save(); updateCanvasHeight();
           card.classList.remove('is-dragging','is-resizing');
+          card.dataset.editorJustFinished = 'true';
+          setTimeout(() => delete card.dataset.editorJustFinished, 150);
           try{ev.currentTarget.releasePointerCapture?.(pointerId);}catch{}
           action=null;pointerId=null;
         }
@@ -1204,6 +1210,7 @@
     function handleCardClick(type, event) {
       const tag = event.target.tagName.toLowerCase();
       if (tag === 'input' || tag === 'button' || tag === 'textarea') return;
+      if (document.body.classList.contains('widget-editing')) return;
       openEngine(type);
     }
 
