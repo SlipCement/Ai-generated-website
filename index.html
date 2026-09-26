@@ -606,6 +606,8 @@
       transform: translateY(-2px) scale(1.02);
       filter: brightness(1.08);
     }
+.card.startup-focus-selected { outline: 4px solid currentColor !important; outline-offset: 4px; }
+    body.choosing-startup-focus .card { cursor: crosshair !important; }
 </style>
 </head>
 <body>
@@ -936,31 +938,26 @@
       document.getElementById('widget-focus-button').addEventListener('click',ev=>{
         ev.preventDefault();ev.stopPropagation();
         const button=ev.currentTarget;
-        const oldText=button.textContent;
         button.textContent='Click a widget...';
         document.body.classList.add('choosing-startup-focus');
 
         const cards=[...document.querySelectorAll('#widget-canvas .card')];
-        const handlers=[];
         const finish=card=>{
           const input=card.querySelector('input, textarea');
           if(!input) return;
           localStorage.setItem('startupFocus',input.id);
-          button.textContent='Startup Focus: '+(card.querySelector('.engine-title')?.textContent || card.querySelector('h2')?.textContent || 'Widget');
-          cleanup();
-        };
-        const cleanup=()=>{
-          cards.forEach((card,i)=>card.removeEventListener('click',handlers[i],true));
+          card.classList.add('startup-focus-selected');
+          button.textContent='Startup Focus: Set';
+          setTimeout(()=>card.classList.remove('startup-focus-selected'),1200);
+          cards.forEach(x=>x.removeEventListener('pointerdown',choose,true));
           document.body.classList.remove('choosing-startup-focus');
-          if(button.textContent==='Click a widget...') button.textContent=oldText;
         };
-        cards.forEach((card,i)=>{
-          handlers[i]=e=>{
-            e.preventDefault();e.stopPropagation();
-            finish(card);
-          };
-          card.addEventListener('click',handlers[i],true);
-        });
+        const choose=e=>{
+          const card=e.currentTarget;
+          e.preventDefault();e.stopPropagation();
+          finish(card);
+        };
+        cards.forEach(card=>card.addEventListener('pointerdown',choose,true));
       });
       document.getElementById('widget-restore-search').addEventListener('click',ev=>{
         ev.preventDefault();ev.stopPropagation();
