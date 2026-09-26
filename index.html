@@ -1109,6 +1109,16 @@
         applyTheme(current);
       })();
 
+      const themeToggle=document.createElement('button');
+      themeToggle.id='theme-picker-toggle';
+      themeToggle.type='button';
+      themeToggle.textContent='🎨 Themes';
+      themeToggle.onclick=e=>{
+        e.preventDefault(); e.stopPropagation();
+        document.getElementById('theme-picker').classList.toggle('show');
+      };
+      document.body.appendChild(themeToggle);
+
 // Keep the canvas tall enough after a window resize without touching widget positions.
       window.addEventListener('resize',updateCanvasHeight);
     })();
