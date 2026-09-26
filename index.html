@@ -246,13 +246,6 @@
       font-variant-numeric: tabular-nums;
     }
 
-    .theme-toggle {
-      position: fixed;
-      top: 20px;
-      right: 20px;
-      z-index: 1000;
-    }
-
     .light {
       background: linear-gradient(135deg, #dbeafe, #f8fafc);
       color: #111827;
@@ -580,15 +573,27 @@
     .search-box-wrapper {
       position: relative;
     }
-      .project-repo-link { color: inherit; text-decoration: underline; cursor: pointer; }
-    .project-repo-link:hover { opacity: .8; }
+      .project-repo-link {
+      display: inline-block;
+      padding: 9px 15px;
+      border-radius: 12px;
+      background: var(--repo-link-bg, #fff);
+      color: var(--repo-link-text, #111) !important;
+      text-decoration: none;
+      font-weight: 800;
+      border: 1px solid color-mix(in srgb, var(--repo-link-text, #111) 35%, transparent);
+      box-shadow: 0 8px 22px rgba(0,0,0,.18);
+      transition: transform .2s ease, filter .2s ease;
+    }
+    .project-repo-link:hover {
+      transform: translateY(-2px) scale(1.02);
+      filter: brightness(1.08);
+    }
 </style>
 </head>
 <body>
   <div class="bg-glow"></div>
   <div class="bg-glow"></div>
-
-  <button class="theme-toggle" onclick="toggleTheme()">Toggle Theme</button>
 
   <div style="display:flex; justify-content:center; align-items:center; gap:28px; margin-bottom:10px; flex-wrap:wrap;">
     <a href="https://duckduckgo.com" style="transition:0.2s;">
@@ -1021,12 +1026,23 @@
 
         const key='aiGeneratedWebsiteTheme';
 
+        function hexOpposite(hex) {
+          const m=String(hex).match(/^#([0-9a-f]{6})$/i);
+          if (!m) return '#ffffff';
+          const n=parseInt(m[1],16);
+          const r=255-((n>>16)&255), g=255-((n>>8)&255), b=255-(n&255);
+          return '#' + [r,g,b].map(v=>v.toString(16).padStart(2,'0')).join('');
+        }
+
         function applyTheme(name) {
           const t=themes[name] || customThemes[name] || themes.default;
           document.body.style.background=t.bg;
           document.body.style.color=t.text;
           document.documentElement.style.setProperty('--theme-accent',t.accent);
           document.documentElement.style.setProperty('--theme-card',t.card);
+          const opposite=hexOpposite(t.bg);
+          document.documentElement.style.setProperty('--repo-link-bg',opposite);
+          document.documentElement.style.setProperty('--repo-link-text',hexOpposite(opposite));
           document.querySelectorAll('.card').forEach(card => {
             if (!card.dataset.themeCustom) card.style.background=t.card;
           });
@@ -1358,19 +1374,6 @@
       }
       // Focus on DuckDuckGo search bar on page load
       document.getElementById('duckInput').focus();
-    });
-
-    function toggleTheme() {
-      document.body.classList.toggle('light');
-      localStorage.setItem('theme', document.body.classList.contains('light') ? 'light' : 'dark');
-    }
-
-    // Load saved theme preference
-    window.addEventListener('load', () => {
-      const savedTheme = localStorage.getItem('theme');
-      if (savedTheme === 'light') {
-        document.body.classList.add('light');
-      }
     });
 
     // Add Enter/Return key support for search inputs
