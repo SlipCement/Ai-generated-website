@@ -268,37 +268,56 @@
     }
 
     textarea {
+      width: 100%;
+      min-height: 90px;
+      box-sizing: border-box;
+      padding: 12px 14px;
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 12px;
+      outline: none;
+      resize: none;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
       -webkit-font-smoothing: antialiased;
       -webkit-appearance: none;
       appearance: none;
       font-size: 16px;
+      line-height: 1.45;
       color: white;
       background: rgba(255,255,255,0.12) !important;
+      transition: 0.2s ease;
+    }
+    textarea:focus {
+      background: rgba(255,255,255,0.18) !important;
+      border-color: rgba(0,255,255,0.55);
+      box-shadow: 0 0 10px rgba(0,255,255,0.2);
     }
 
 
     /* Widget dashboard */
     .tools {
-      display: grid !important;
-      grid-template-columns: minmax(260px, 420px) minmax(260px, 420px) !important;
-      justify-content: center !important;
-      align-items: start !important;
-      gap: 20px !important;
-      width: 100% !important;
+      position: relative !important;
+      width: min(1200px, 100%) !important;
+      max-width: 1200px !important;
+      min-height: 520px !important;
+      margin: 40px auto 0 !important;
+      display: block !important;
     }
     .tools > div:first-child { display: contents !important; }
-    .tools > .card { grid-column: 1 / -1; justify-self: center; }
 
     .card.widget-ready {
-      position: relative !important;
-      flex: none !important;
+      position: absolute !important;
+      left: var(--widget-left, 0px) !important;
+      top: var(--widget-top, 0px) !important;
+      width: var(--widget-width, 400px) !important;
+      height: var(--widget-height, auto) !important;
       min-width: 220px !important;
       min-height: 130px !important;
       max-width: none !important;
+      margin: 0 !important;
       box-sizing: border-box !important;
       overflow: visible !important;
       transform: translate(var(--widget-x, 0px), var(--widget-y, 0px));
+      transition: 0.3s ease;
     }
     .card.widget-ready:hover {
       transform: translate(var(--widget-x, 0px), var(--widget-y, 0px)) translateY(-5px) scale(1.02);
@@ -344,7 +363,6 @@
       text-align: center !important; z-index: 101 !important;
       touch-action: manipulation !important;
     }
-    body.widget-editing .widget-remove-button:hover { background: #c9363d !important; }
 
     body.widget-editing .widget-resize-handle {
       display: block !important;
@@ -372,31 +390,65 @@
       background: rgba(0,0,0,.5); backdrop-filter: blur(6px);
     }
     #widget-picker-panel {
-      width: min(360px,90vw); padding: 22px; border-radius: 20px;
+      width: min(420px,92vw); max-height: 88vh; overflow-y: auto;
+      padding: 22px; border-radius: 20px;
       background: #172033; border: 1px solid rgba(255,255,255,.2);
       box-shadow: 0 20px 60px rgba(0,0,0,.5);
       display: flex; flex-direction: column; gap: 10px;
     }
+    #widget-picker-panel input,
+    #widget-picker-panel select,
+    #widget-picker-panel textarea {
+      width: 100%; padding: 11px 12px; border-radius: 10px;
+      border: 1px solid rgba(255,255,255,.15);
+      background: rgba(255,255,255,.08); color: white; outline: none;
+      font-size: 15px;
+    }
+    #widget-picker-panel label { font-size: .85rem; opacity: .8; margin-top: 4px; }
     #widget-picker-panel button { width: 100%; margin: 0; }
 
+    .custom-widget-form { display: flex; flex-direction: column; gap: 8px; }
+    .custom-widget-help { font-size: .78rem; opacity: .65; line-height: 1.4; }
+    .custom-api-output {
+      margin-top: 12px; max-height: 220px; overflow: auto;
+      padding: 10px; border-radius: 10px;
+      background: rgba(0,0,0,.22); white-space: pre-wrap; word-break: break-word;
+      font: 12px/1.45 ui-monospace, SFMono-Regular, Consolas, monospace;
+    }
+    .custom-widget-button { width: 100%; }
     .widget-notes {
       display: flex !important; flex-direction: column !important;
       overflow: hidden !important;
     }
     .widget-notes textarea {
-      flex: 1 1 auto !important;
-      width: 100% !important; min-height: 70px !important; height: auto !important;
+      flex: 1 1 auto !important; width: 100% !important;
+      min-height: 70px !important; height: auto !important;
       box-sizing: border-box !important; resize: none !important;
     }
     .widget-notes .notes-done {
       flex: 0 0 auto !important; margin-top: 15px !important; width: 100% !important;
     }
 
-    @media (max-width: 800px) {
-      .tools { grid-template-columns: minmax(260px,420px) !important; }
-      .tools > .card { grid-column: 1; }
+    .search-engine-change {
+      float: right; margin-top: -4px; padding: 6px 9px !important;
+      font-size: 12px !important; border-radius: 9px !important;
+    }
+    .engine-picker {
+      position: absolute; top: 48px; right: 20px; z-index: 4000;
+      display: none; min-width: 180px; padding: 8px;
+      border-radius: 12px; background: rgba(20,20,30,.97);
+      border: 1px solid rgba(255,255,255,.18);
+      box-shadow: 0 15px 40px rgba(0,0,0,.4);
+    }
+    .engine-picker.show { display: block; }
+    .engine-picker button {
+      display: block; width: 100%; margin: 3px 0; text-align: left;
+      background: rgba(255,255,255,.08);
     }
 
+    @media (max-width: 800px) {
+      .tools { min-height: 1050px !important; }
+    }
     /* Suggestions dropdown styles */
     .suggestions-dropdown {
       position: absolute;
@@ -516,7 +568,7 @@
   <div class="search-grid">
 
     <div class="card wide-card" style="border:1px solid #b85a41; background:rgba(227,113,81,0.08);" onclick="handleCardClick('duck', event)">
-      <h2 style="color:#E37151;">DuckDuckGo</h2>
+      <h2 style="color:#E37151;"><span class="engine-title">DuckDuckGo</span><button type="button" class="search-engine-change" data-engine-card="duck">Change</button></h2>
       <div class="search-box-wrapper">
         <div class="search-box">
           <input   type="search"   id="duckInput"   name="duck_search_2026"   placeholder="Search privately..."   autocomplete="off"   autocorrect="off"   autocapitalize="off"   spellcheck="false">
@@ -527,7 +579,7 @@
     </div>
 
     <div class="card wide-card" style="border:1px solid #2f5fb3; background:rgba(66,133,244,0.08);" onclick="handleCardClick('google', event)">
-      <h2 style="color:#4285F4;">Google Search</h2>
+      <h2 style="color:#4285F4;"><span class="engine-title">Google Search</span><button type="button" class="search-engine-change" data-engine-card="google">Change</button></h2>
       <div class="search-box-wrapper">
         <div class="search-box">
           <input   type="search"   id="googleInput"   name="google_search_2026"   placeholder="Search Google..."   autocomplete="off"   autocorrect="off"   autocapitalize="off"   spellcheck="false">
@@ -538,7 +590,7 @@
     </div>
 
     <div class="card small-card" style="border:1px solid #b30000; background:rgba(255,0,0,0.08);" onclick="handleCardClick('youtube', event)">
-      <h2 style="color:#FF0000;">YouTube</h2>
+      <h2 style="color:#FF0000;"><span class="engine-title">YouTube</span><button type="button" class="search-engine-change" data-engine-card="youtube">Change</button></h2>
       <div class="search-box-wrapper">
         <div class="search-box">
           <input   type="search"   id="youtubeInput"   name="youtube_search_2026"   placeholder="Find videos..."   autocomplete="off"   autocorrect="off"   autocapitalize="off"   spellcheck="false">
@@ -549,7 +601,7 @@
     </div>
 
     <div class="card small-card" style="border:1px solid #6f767d; background:rgba(162,169,177,0.08);" onclick="handleCardClick('wiki', event)">
-      <h2 style="color:#A2A9B1;">Wikipedia</h2>
+      <h2 style="color:#A2A9B1;"><span class="engine-title">Wikipedia</span><button type="button" class="search-engine-change" data-engine-card="wiki">Change</button></h2>
       <div class="search-box-wrapper">
         <div class="search-box">
           <input   type="search"   id="wikiInput"   name="wiki_search_2026"   placeholder="Search knowledge..."   autocomplete="off"   autocorrect="off"   autocapitalize="off"   spellcheck="false">
@@ -593,216 +645,291 @@
 
     // Widget dashboard
     (() => {
-      const POS_KEY = 'aiGeneratedWebsiteWidgetPositionsV3';
-      const REMOVED_KEY = 'aiGeneratedWebsiteRemovedWidgetsV3';
-
+      const POS_KEY = 'aiGeneratedWebsiteWidgetPositionsV4';
+      const REMOVED_KEY = 'aiGeneratedWebsiteRemovedWidgetsV4';
+      const EDITING_KEY = 'aiGeneratedWebsiteWidgetEditing';
       let positions = {};
       let removed = new Set();
+      let dirty = false;
+
       try { positions = JSON.parse(localStorage.getItem(POS_KEY) || '{}'); } catch {}
       try { removed = new Set(JSON.parse(localStorage.getItem(REMOVED_KEY) || '[]')); } catch {}
 
       const save = () => {
         localStorage.setItem(POS_KEY, JSON.stringify(positions));
         localStorage.setItem(REMOVED_KEY, JSON.stringify([...removed]));
+        dirty = true;
       };
+
+      const canvas = document.querySelector('.tools');
+
+      function defaultPosition(id, index) {
+        const wide = window.innerWidth > 800;
+        const gap = 20;
+        const cardW = 400;
+        if (!wide) return { x: 0, y: index * 245 };
+        const center = Math.max(0, (canvas.clientWidth - (cardW * 2 + gap)) / 2);
+        if (id === 'clock') return { x: center, y: 0 };
+        if (id === 'notes') return { x: center + cardW + gap, y: 0 };
+        if (id === 'github') return { x: Math.max(0, (canvas.clientWidth - cardW) / 2), y: 270 };
+        return { x: 0, y: Math.ceil((index + 1) / 2) * 245 };
+      }
+
+      function updateCanvasHeight() {
+        let bottom = 520;
+        canvas.querySelectorAll('.card.widget-ready').forEach(card => {
+          const top = parseFloat(card.style.getPropertyValue('--widget-top')) || 0;
+          const y = parseFloat(card.style.getPropertyValue('--widget-y')) || 0;
+          const h = card.getBoundingClientRect().height || 130;
+          bottom = Math.max(bottom, top + y + h + 40);
+        });
+        canvas.style.minHeight = Math.ceil(bottom) + 'px';
+      }
+
+      function markDirty() { dirty = true; }
 
       function setupWidget(card, index) {
         if (!card.closest('.tools') || card.dataset.widgetReady === 'true') return;
-
-        const id = card.dataset.widgetId || 'widget-' + index;
+        const id = card.dataset.widgetId || ('widget-' + Date.now() + '-' + index);
         card.dataset.widgetId = id;
         if (removed.has(id)) { card.remove(); return; }
 
         card.classList.add('widget-ready');
-        const initial = card.getBoundingClientRect();
         const saved = positions[id] || {};
+        const def = defaultPosition(id, index);
+        const x = Number.isFinite(saved.x) ? saved.x : 0;
+        const y = Number.isFinite(saved.y) ? saved.y : 0;
+        const left = Number.isFinite(saved.left) ? saved.left : def.x;
+        const top = Number.isFinite(saved.top) ? saved.top : def.y;
+        const width = Number.isFinite(saved.w) ? saved.w : (id === 'github' ? 400 : 400);
+        const height = Number.isFinite(saved.h) ? saved.h : null;
 
-        if (!saved.w) card.style.width = Math.round(initial.width) + 'px';
-        if (!saved.h) card.style.height = Math.round(initial.height) + 'px';
-        card.style.setProperty('--widget-x', (Number(saved.x) || 0) + 'px');
-        card.style.setProperty('--widget-y', (Number(saved.y) || 0) + 'px');
-        if (saved.w) card.style.width = saved.w + 'px';
-        if (saved.h) card.style.height = saved.h + 'px';
+        card.style.setProperty('--widget-left', left + 'px');
+        card.style.setProperty('--widget-top', top + 'px');
+        card.style.setProperty('--widget-x', x + 'px');
+        card.style.setProperty('--widget-y', y + 'px');
+        card.style.setProperty('--widget-width', width + 'px');
+        if (height) card.style.height = height + 'px';
 
         const drag = document.createElement('button');
-        drag.type = 'button'; drag.className = 'widget-drag-handle';
-        drag.textContent = '⠿'; drag.title = 'Drag widget';
-
+        drag.type='button'; drag.className='widget-drag-handle'; drag.textContent='⠿'; drag.title='Drag widget';
         const close = document.createElement('button');
-        close.type = 'button'; close.className = 'widget-remove-button';
-        close.textContent = '×'; close.title = 'Remove widget';
-
+        close.type='button'; close.className='widget-remove-button'; close.textContent='×'; close.title='Remove widget';
         const resize = document.createElement('div');
-        resize.className = 'widget-resize-handle'; resize.title = 'Resize widget';
+        resize.className='widget-resize-handle'; resize.title='Resize widget';
+        card.append(drag,close,resize);
+        card.dataset.widgetReady='true';
 
-        card.append(drag, close, resize);
-        card.dataset.widgetReady = 'true';
+        let action=null,pointerId=null,sx=0,sy=0,startX=0,startY=0,startW=0,startH=0;
 
-        let action = null, pointerId = null;
-        let sx = 0, sy = 0, startX = 0, startY = 0, startW = 0, startH = 0;
-
-        function begin(ev, type) {
+        function begin(ev,type) {
           if (!document.body.classList.contains('widget-editing')) return;
           ev.preventDefault(); ev.stopPropagation();
-          action = type; pointerId = ev.pointerId;
-          sx = ev.clientX; sy = ev.clientY;
-          startX = parseFloat(card.style.getPropertyValue('--widget-x')) || 0;
-          startY = parseFloat(card.style.getPropertyValue('--widget-y')) || 0;
-          const r = card.getBoundingClientRect();
-          startW = r.width; startH = r.height;
-          card.classList.toggle('is-dragging', type === 'move');
-          card.classList.toggle('is-resizing', type === 'resize');
+          action=type; pointerId=ev.pointerId; sx=ev.clientX; sy=ev.clientY;
+          startX=parseFloat(card.style.getPropertyValue('--widget-x'))||0;
+          startY=parseFloat(card.style.getPropertyValue('--widget-y'))||0;
+          const r=card.getBoundingClientRect(); startW=r.width; startH=r.height;
+          card.classList.toggle('is-dragging',type==='move');
+          card.classList.toggle('is-resizing',type==='resize');
           ev.currentTarget.setPointerCapture?.(pointerId);
         }
 
         function move(ev) {
-          if (!action || ev.pointerId !== pointerId) return;
+          if(!action || ev.pointerId!==pointerId) return;
           ev.preventDefault(); ev.stopPropagation();
-          const dx = ev.clientX - sx, dy = ev.clientY - sy;
-
-          if (action === 'move') {
-            card.style.setProperty('--widget-x', (startX + dx) + 'px');
-            card.style.setProperty('--widget-y', (startY + dy) + 'px');
+          const dx=ev.clientX-sx, dy=ev.clientY-sy;
+          if(action==='move'){
+            card.style.setProperty('--widget-x',(startX+dx)+'px');
+            card.style.setProperty('--widget-y',(startY+dy)+'px');
           } else {
-            card.style.width = Math.max(220, Math.round(startW + dx)) + 'px';
-            card.style.height = Math.max(130, Math.round(startH + dy)) + 'px';
+            card.style.setProperty('--widget-width',Math.max(220,Math.round(startW+dx))+'px');
+            card.style.height=Math.max(130,Math.round(startH+dy))+'px';
           }
+          updateCanvasHeight();
         }
 
         function end(ev) {
-          if (!action || ev.pointerId !== pointerId) return;
+          if(!action || ev.pointerId!==pointerId) return;
           ev.preventDefault(); ev.stopPropagation();
-
-          if (action === 'move') {
-            positions[id] = {...(positions[id] || {}),
-              x: parseFloat(card.style.getPropertyValue('--widget-x')) || 0,
-              y: parseFloat(card.style.getPropertyValue('--widget-y')) || 0};
-          } else {
-            positions[id] = {...(positions[id] || {}),
-              w: card.getBoundingClientRect().width,
-              h: card.getBoundingClientRect().height};
-          }
-
-          save();
-          card.classList.remove('is-dragging', 'is-resizing');
-          try { ev.currentTarget.releasePointerCapture?.(pointerId); } catch {}
-          action = null; pointerId = null;
+          positions[id]={...(positions[id]||{}),
+            left:parseFloat(card.style.getPropertyValue('--widget-left'))||0,
+            top:parseFloat(card.style.getPropertyValue('--widget-top'))||0,
+            x:parseFloat(card.style.getPropertyValue('--widget-x'))||0,
+            y:parseFloat(card.style.getPropertyValue('--widget-y'))||0,
+            w:card.getBoundingClientRect().width,
+            h:card.getBoundingClientRect().height};
+          save(); updateCanvasHeight();
+          card.classList.remove('is-dragging','is-resizing');
+          try{ev.currentTarget.releasePointerCapture?.(pointerId);}catch{}
+          action=null;pointerId=null;
         }
 
-        drag.addEventListener('pointerdown', ev => begin(ev,'move'));
-        resize.addEventListener('pointerdown', ev => begin(ev,'resize'));
-        drag.addEventListener('pointermove', move);
-        resize.addEventListener('pointermove', move);
-        drag.addEventListener('pointerup', end);
-        resize.addEventListener('pointerup', end);
-        drag.addEventListener('pointercancel', end);
-        resize.addEventListener('pointercancel', end);
+        drag.addEventListener('pointerdown',ev=>begin(ev,'move'));
+        resize.addEventListener('pointerdown',ev=>begin(ev,'resize'));
+        drag.addEventListener('pointermove',move); resize.addEventListener('pointermove',move);
+        drag.addEventListener('pointerup',end); resize.addEventListener('pointerup',end);
+        drag.addEventListener('pointercancel',end); resize.addEventListener('pointercancel',end);
 
-        close.addEventListener('pointerdown', ev => { ev.preventDefault(); ev.stopPropagation(); });
-        close.addEventListener('click', ev => {
-          ev.preventDefault(); ev.stopPropagation();
-          removed.add(id); delete positions[id]; save(); card.remove();
+        close.addEventListener('pointerdown',ev=>{ev.preventDefault();ev.stopPropagation();});
+        close.addEventListener('click',ev=>{
+          ev.preventDefault();ev.stopPropagation();
+          removed.add(id); delete positions[id]; save(); card.remove(); updateCanvasHeight();
         });
       }
 
-      document.querySelectorAll('.tools .card').forEach((card,i) => setupWidget(card,i));
+      document.querySelectorAll('.tools .card').forEach((card,i)=>setupWidget(card,i));
+      updateCanvasHeight();
 
-      const toolbar = document.createElement('div');
-      toolbar.id = 'widget-toolbar';
-      toolbar.innerHTML =
-        '<button type="button" id="widget-edit-toggle">Edit Widgets</button>' +
+      const toolbar=document.createElement('div');
+      toolbar.id='widget-toolbar';
+      toolbar.innerHTML='<button type="button" id="widget-edit-toggle">Edit Widgets</button>' +
         '<button type="button" class="widget-edit-control" id="widget-add-button">＋ Add Widget</button>' +
         '<button type="button" class="widget-edit-control" id="widget-reset-button">Reset Widgets</button>';
       document.body.appendChild(toolbar);
 
-      const editButton = document.getElementById('widget-edit-toggle');
-      editButton.addEventListener('click', ev => {
-        ev.preventDefault(); ev.stopPropagation();
-        const editing = document.body.classList.toggle('widget-editing');
-        editButton.textContent = editing ? 'Done Editing' : 'Edit Widgets';
+      const editButton=document.getElementById('widget-edit-toggle');
+      function setEditing(on) {
+        document.body.classList.toggle('widget-editing',on);
+        editButton.textContent=on?'Done Editing':'Edit Widgets';
+        localStorage.setItem(EDITING_KEY,on?'1':'0');
+        if(!on) dirty=false;
+      }
+      editButton.addEventListener('click',ev=>{
+        ev.preventDefault();ev.stopPropagation();
+        setEditing(!document.body.classList.contains('widget-editing'));
       });
 
-      document.getElementById('widget-reset-button').addEventListener('click', ev => {
-        ev.preventDefault(); ev.stopPropagation();
-        localStorage.removeItem(POS_KEY); localStorage.removeItem(REMOVED_KEY);
+      window.addEventListener('beforeunload',ev=>{
+        if(document.body.classList.contains('widget-editing') && dirty){
+          ev.preventDefault(); ev.returnValue='Unsaved changes may be lost.';
+        }
+      });
+
+      document.getElementById('widget-reset-button').addEventListener('click',ev=>{
+        ev.preventDefault();ev.stopPropagation();
+        if(!confirm('Reset all widget positions, sizes, and removed widgets?')) return;
+        localStorage.removeItem(POS_KEY);localStorage.removeItem(REMOVED_KEY);
         location.reload();
       });
 
-      document.getElementById('widget-add-button').addEventListener('click', ev => {
-        ev.preventDefault(); ev.stopPropagation();
-        if (document.getElementById('widget-picker')) {
-          document.getElementById('widget-picker').remove(); return;
+      function makeCustomWidget() {
+        const id='custom-'+Date.now()+'-'+Math.random().toString(36).slice(2,7);
+        const title=document.getElementById('customWidgetTitle').value.trim()||'Custom Widget';
+        const type=document.getElementById('customWidgetType').value;
+        const url=document.getElementById('customWidgetUrl').value.trim();
+        const buttonText=document.getElementById('customWidgetButton').value.trim()||'Open';
+        const apiKey=document.getElementById('customWidgetApiKey').value.trim();
+
+        if(!url){ alert('Please enter a URL.'); return; }
+        if(!/^https?:\/\//i.test(url)){ alert('The URL must start with http:// or https://'); return; }
+
+        const card=document.createElement('div');
+        card.className='card';
+        card.dataset.widgetId=id;
+        card.dataset.customWidget='true';
+
+        const safeTitle=escapeHtml(title);
+        if(type==='button' || type==='link'){
+          card.innerHTML='<h2>'+safeTitle+'</h2><button type="button" class="custom-widget-button">'+escapeHtml(buttonText)+'</button>';
+          card.querySelector('button').addEventListener('click',ev=>{
+            ev.preventDefault();ev.stopPropagation();
+            window.location.href=url;
+          });
+        } else if(type==='iframe'){
+          card.innerHTML='<h2>'+safeTitle+'</h2><iframe title="'+safeTitle+'" src="'+escapeHtml(url)+'" style="width:100%;height:220px;border:0;border-radius:12px;background:rgba(0,0,0,.15);" loading="lazy"></iframe>';
+        } else {
+          card.innerHTML='<h2>'+safeTitle+'</h2><div class="custom-api-output">Loading API…</div>';
+          const output=card.querySelector('.custom-api-output');
+          const headers={};
+          if(apiKey) headers.Authorization='Bearer '+apiKey;
+          fetch(url,{headers}).then(r=>r.text()).then(text=>{
+            try { output.textContent=JSON.stringify(JSON.parse(text),null,2); }
+            catch { output.textContent=text; }
+          }).catch(err=>{output.textContent='API request failed: '+err.message+' (The API may block browser/CORS requests.)';});
         }
 
-        const picker = document.createElement('div');
-        picker.id = 'widget-picker';
-        picker.innerHTML =
-          '<div id="widget-picker-panel"><h3>Add Widget</h3>' +
+        canvas.appendChild(card);
+        setupWidget(card,canvas.querySelectorAll('.card').length-1);
+        positions[id]={left:20,top:Math.max(0,canvas.clientHeight-150),x:0,y:0};
+        card.style.setProperty('--widget-left','20px');
+        card.style.setProperty('--widget-top',Math.max(0,canvas.clientHeight-150)+'px');
+        save();updateCanvasHeight();
+      }
+
+      document.getElementById('widget-add-button').addEventListener('click',ev=>{
+        ev.preventDefault();ev.stopPropagation();
+        const old=document.getElementById('widget-picker');
+        if(old){old.remove();return;}
+        const picker=document.createElement('div');
+        picker.id='widget-picker';
+        picker.innerHTML='<div id="widget-picker-panel">' +
+          '<h3>Add Widget</h3>' +
           '<button type="button" data-widget-type="clock">🕐 Live Clock</button>' +
           '<button type="button" data-widget-type="notes">📝 Quick Notes</button>' +
           '<button type="button" data-widget-type="github">🐙 GitHub</button>' +
-          '<button type="button" id="widget-picker-cancel">Cancel</button></div>';
+          '<button type="button" id="custom-widget-open">🧩 Custom Widget</button>' +
+          '<button type="button" id="widget-picker-cancel">Cancel</button>' +
+          '</div>';
         document.body.appendChild(picker);
 
-        picker.querySelector('#widget-picker-cancel').addEventListener('click', ev => {
-          ev.preventDefault(); ev.stopPropagation(); picker.remove();
-        });
+        picker.querySelector('#widget-picker-cancel').onclick=()=>picker.remove();
+        picker.querySelectorAll('[data-widget-type]').forEach(button=>{
+          button.addEventListener('click',ev=>{
+            ev.preventDefault();ev.stopPropagation();
+            const type=button.dataset.widgetType;
+            const id='extra-'+type+'-'+Date.now()+'-'+Math.random().toString(36).slice(2,6);
+            const card=document.createElement('div');
+            card.className='card';card.dataset.widgetId=id;
 
-        picker.querySelectorAll('[data-widget-type]').forEach(button => {
-          button.addEventListener('click', ev => {
-            ev.preventDefault(); ev.stopPropagation();
-
-            const type = button.dataset.widgetType;
-            const id = 'extra-' + type;
-            if (document.querySelector('[data-widget-id="' + id + '"]')) {
-              picker.remove(); return;
-            }
-
-            removed.delete(id);
-            const card = document.createElement('div');
-            card.className = 'card';
-            card.dataset.widgetId = id;
-
-            if (type === 'clock') {
-              card.innerHTML = '<h2>Live Clock</h2><div class="clock" data-extra-clock>00:00:00</div>';
-              const tick = () => {
-                const el = card.querySelector('[data-extra-clock]');
-                if (el) el.textContent = new Date().toLocaleTimeString();
-              };
-              tick(); setInterval(tick,1000);
-            } else if (type === 'notes') {
+            if(type==='clock'){
+              card.innerHTML='<h2>Live Clock</h2><div class="clock" data-extra-clock>00:00:00</div>';
+              const tick=()=>{const el=card.querySelector('[data-extra-clock]');if(el)el.textContent=new Date().toLocaleTimeString();};
+              tick();setInterval(tick,1000);
+            } else if(type==='notes'){
               card.classList.add('widget-notes');
-              card.innerHTML =
-                '<h2>Quick Notes</h2><textarea class="extra-notes-box" placeholder="Write something..."></textarea>' +
-                '<button class="notes-done" type="button">Done</button>';
-              const box = card.querySelector('.extra-notes-box');
-              const key = 'jasperSearchNotesExtra';
-              box.value = localStorage.getItem(key) || '';
-              card.querySelector('.notes-done').addEventListener('click', ev => {
-                ev.preventDefault(); ev.stopPropagation();
-                localStorage.setItem(key, box.value);
-                const b = card.querySelector('.notes-done');
-                b.textContent = 'Saved!';
-                setTimeout(() => { if (b.isConnected) b.textContent = 'Done'; },900);
-              });
+              card.innerHTML='<h2>Quick Notes</h2><textarea class="extra-notes-box" placeholder="Write something..."></textarea><button class="notes-done" type="button">Done</button>';
+              const box=card.querySelector('.extra-notes-box');
+              card.querySelector('.notes-done').onclick=()=>{
+                localStorage.setItem('jasperSearchNotes-'+id,box.value);
+                card.querySelector('.notes-done').textContent='Saved!';
+                setTimeout(()=>{if(card.isConnected)card.querySelector('.notes-done').textContent='Done';},900);
+              };
             } else {
-              card.style.cssText =
-                'width:100%; max-width:420px; border:1px solid #3a3f46; background:rgba(245,245,245,0.05); text-align:center;';
-              card.innerHTML =
-                '<h2 style="font-size:2rem; margin-bottom:20px;">GitHub</h2>' +
-                '<button type="button" class="github-widget-button" style="width:100%; background:#24292f; font-size:1.2rem; padding:20px; color:white;">Open GitHub</button>';
-              card.querySelector('.github-widget-button').addEventListener('click', ev => {
-                ev.preventDefault(); ev.stopPropagation();
-                window.location.href='https://github.com';
-              });
+              card.style.cssText='width:400px;border:1px solid #3a3f46;background:rgba(245,245,245,.05);text-align:center;';
+              card.innerHTML='<h2 style="font-size:2rem;margin-bottom:20px;">GitHub</h2><button type="button" style="width:100%;background:#24292f;font-size:1.2rem;padding:20px;color:white;">Open GitHub</button>';
+              card.querySelector('button').onclick=()=>window.location.href='https://github.com';
             }
-
-            document.querySelector('.tools').appendChild(card);
-            setupWidget(card, document.querySelectorAll('.tools .card').length - 1);
-            save(); picker.remove();
+            canvas.appendChild(card);setupWidget(card,canvas.querySelectorAll('.card').length-1);
+            positions[id]={left:20,top:Math.max(0,canvas.clientHeight-150),x:0,y:0};
+            card.style.setProperty('--widget-left','20px');card.style.setProperty('--widget-top',Math.max(0,canvas.clientHeight-150)+'px');
+            save();updateCanvasHeight();picker.remove();
           });
         });
+
+        picker.querySelector('#custom-widget-open').addEventListener('click',()=>{
+          picker.querySelector('#widget-picker-panel').innerHTML=
+            '<h3>Custom Widget</h3>' +
+            '<div class="custom-widget-form">' +
+            '<label>Widget title</label><input id="customWidgetTitle" placeholder="My Widget">' +
+            '<label>Type</label><select id="customWidgetType"><option value="button">Button / Link</option><option value="iframe">Embedded page</option><option value="api">API data</option></select>' +
+            '<label>URL</label><input id="customWidgetUrl" placeholder="https://example.com">' +
+            '<label>Button text (button/link only)</label><input id="customWidgetButton" placeholder="Open">' +
+            '<label>API key (API only, optional)</label><input id="customWidgetApiKey" type="password" placeholder="Bearer token">' +
+            '<div class="custom-widget-help">API keys are stored only in this browser and sent from the page, so do not use a secret that must stay private. Browser CORS rules can prevent some APIs from loading.</div>' +
+            '<button type="button" id="custom-widget-create">Create Widget</button>' +
+            '<button type="button" id="custom-widget-back">Back</button>' +
+            '</div>';
+
+          picker.querySelector('#custom-widget-back').onclick=()=>{
+            picker.remove();
+            document.getElementById('widget-add-button').click();
+          };
+          picker.querySelector('#custom-widget-create').onclick=()=>{makeCustomWidget();picker.remove();};
+        });
       });
+
+      // Keep the canvas tall enough after a window resize without touching widget positions.
+      window.addEventListener('resize',updateCanvasHeight);
     })();
 
     // Debounce function for API calls
@@ -969,34 +1096,69 @@
       }
     });
 
-    function openEngine(type) {
+    // Search engine switcher
+    (() => {
       const engines = {
-        google: 'https://www.google.com',
-        duck: 'https://duckduckgo.com',
-        youtube: 'https://www.youtube.com',
-        wiki: 'https://en.wikipedia.org'
+        google: { name:'Google Search', title:'Google Search', placeholder:'Search Google...', search:'https://www.google.com/search?q=', home:'https://www.google.com' },
+        duck: { name:'DuckDuckGo', title:'DuckDuckGo', placeholder:'Search privately...', search:'https://duckduckgo.com/?q=', home:'https://duckduckgo.com' },
+        bing: { name:'Bing', title:'Bing', placeholder:'Search Bing...', search:'https://www.bing.com/search?q=', home:'https://www.bing.com' },
+        brave: { name:'Brave Search', title:'Brave Search', placeholder:'Search Brave...', search:'https://search.brave.com/search?q=', home:'https://search.brave.com' },
+        yahoo: { name:'Yahoo', title:'Yahoo Search', placeholder:'Search Yahoo...', search:'https://search.yahoo.com/search?p=', home:'https://search.yahoo.com' },
+        youtube: { name:'YouTube', title:'YouTube', placeholder:'Find videos...', search:'https://www.youtube.com/results?search_query=', home:'https://www.youtube.com' },
+        wiki: { name:'Wikipedia', title:'Wikipedia', placeholder:'Search knowledge...', search:'https://en.wikipedia.org/wiki/Special:Search?search=', home:'https://en.wikipedia.org' }
       };
+      const cardTypes=['duck','google','youtube','wiki'];
+      const saved=JSON.parse(localStorage.getItem('searchCardEngines')||'{}');
 
-      const inputIds = {
-        google: 'googleInput',
-        duck: 'duckInput',
-        youtube: 'youtubeInput',
-        wiki: 'wikiInput'
-      };
+      function applyEngine(cardType,engineType) {
+        const card=document.querySelector('[onclick*="handleCardClick(\\''+cardType+'\\'"]');
+        if(!card || !engines[engineType]) return;
+        const e=engines[engineType];
+        card.dataset.currentEngine=engineType;
+        card.querySelector('.engine-title').textContent=e.title;
+        const input=card.querySelector('input');
+        input.placeholder=e.placeholder;
+        input.dataset.engine=engineType;
+        const oldId=input.id;
+        const dropdown=card.querySelector('.suggestions-dropdown');
+        if(dropdown) dropdown.id=oldId.replace('Input','Suggestions');
+        saved[cardType]=engineType;
+        localStorage.setItem('searchCardEngines',JSON.stringify(saved));
+      }
 
+      function openPicker(cardType,button) {
+        const card=button.closest('.card');
+        let picker=card.querySelector('.engine-picker');
+        if(picker){picker.classList.toggle('show');return;}
+        picker=document.createElement('div');picker.className='engine-picker';
+        Object.entries(engines).forEach(([key,e])=>{
+          const b=document.createElement('button');b.type='button';b.textContent=e.name;
+          b.onclick=(ev)=>{ev.preventDefault();ev.stopPropagation();applyEngine(cardType,key);picker.classList.remove('show');};
+          picker.appendChild(b);
+        });
+        card.appendChild(picker);picker.classList.add('show');
+      }
+
+      document.querySelectorAll('.search-engine-change').forEach(button=>{
+        button.addEventListener('click',ev=>{
+          ev.preventDefault();ev.stopPropagation();openPicker(button.dataset.engineCard,button);
+        });
+      });
+
+      cardTypes.forEach(type=>applyEngine(type,saved[type]||type));
+      window._searchEngines=engines;
+    })();
+
+    function openEngine(type) {
+      const inputIds = { google:'googleInput', duck:'duckInput', youtube:'youtubeInput', wiki:'wikiInput' };
       const input = document.getElementById(inputIds[type]);
       const query = input ? input.value.trim() : '';
+      const selected = input?.dataset.engine || type;
+      const engines = window._searchEngines || {};
+      const engine = engines[selected] || engines[type];
 
-      if (query) {
-        let url = '';
-        if (type === 'google') url = 'https://www.google.com/search?q=';
-        if (type === 'duck') url = 'https://duckduckgo.com/?q=';
-        if (type === 'youtube') url = 'https://www.youtube.com/results?search_query=';
-        if (type === 'wiki') url = 'https://en.wikipedia.org/wiki/Special:Search?search=';
-
-        window.location.href = url + encodeURIComponent(query);
-      } else {
-        window.location.href = engines[type];
+      if (engine) {
+        window.location.href = query ? engine.search + encodeURIComponent(query) : engine.home;
       }
     }
 
@@ -1029,7 +1191,8 @@
     window.addEventListener('load', () => {
       const saved = localStorage.getItem('jasperSearchNotes');
       if(saved) {
-        document.getElementById('notesBox').value = saved;
+        const notesBox = document.getElementById('notesBox');
+        if (notesBox) notesBox.value = saved;
       }
       // Focus on DuckDuckGo search bar on page load
       document.getElementById('duckInput').focus();
@@ -1080,16 +1243,18 @@
         window.location.href = link.href;
       }
     });
-    // Handle all link clicks to open in current tab
-document.addEventListener('click', (e) => {
-  const link = e.target.closest('a');
-  if (link && !e.target.closest('.suggestions-dropdown')) {
-    e.preventDefault();
-    window.location.href = link.href;
-  }
-});
+    // Ask before leaving through a link while widget editing is active.
+    document.addEventListener('click', (e) => {
+      if (!document.body.classList.contains('widget-editing')) return;
+      const link = e.target.closest('a');
+      if (!link || e.target.closest('.suggestions-dropdown')) return;
+      if (!confirm('Unsaved changes may be lost. Leave this page?')) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    }, true);
 
-// Prevent browser autocomplete history
+    // Prevent browser autocomplete history
 document.querySelectorAll('input[type="search"]').forEach(input => {
   input.setAttribute('autocomplete', 'off');
 
