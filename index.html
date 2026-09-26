@@ -725,7 +725,7 @@
         function begin(ev,type) {
           if (!document.body.classList.contains('widget-editing')) return;
           ev.preventDefault(); ev.stopPropagation();
-          action=type; pointerId=ev.pointerId; sx=ev.clientX; sy=ev.clientY;
+          action=type; pointerId=ev.pointerId; sx=ev.clientX; sy=ev.clientY; dirty=true;
           startX=parseFloat(card.style.getPropertyValue('--widget-x'))||0;
           startY=parseFloat(card.style.getPropertyValue('--widget-y'))||0;
           const r=card.getBoundingClientRect(); startW=r.width; startH=r.height;
@@ -773,7 +773,7 @@
         close.addEventListener('pointerdown',ev=>{ev.preventDefault();ev.stopPropagation();});
         close.addEventListener('click',ev=>{
           ev.preventDefault();ev.stopPropagation();
-          removed.add(id); delete positions[id]; save(); card.remove(); updateCanvasHeight();
+          removed.add(id); delete positions[id]; dirty=true; save(); card.remove(); updateCanvasHeight();
         });
       }
 
@@ -800,8 +800,9 @@
       });
 
       window.addEventListener('beforeunload',ev=>{
-        if(document.body.classList.contains('widget-editing') && dirty){
-          ev.preventDefault(); ev.returnValue='Unsaved changes may be lost.';
+        if(document.body.classList.contains('widget-editing')){
+          ev.preventDefault();
+          ev.returnValue='Unsaved changes may be lost.';
         }
       });
 
@@ -1111,7 +1112,7 @@
       const saved=JSON.parse(localStorage.getItem('searchCardEngines')||'{}');
 
       function applyEngine(cardType,engineType) {
-        const card=document.querySelector('[onclick*="handleCardClick(\\''+cardType+'\\'"]');
+        const card=[...document.querySelectorAll('.search-grid .card')].find(el => (el.getAttribute('onclick') || '').includes("handleCardClick('" + cardType + "'"));
         if(!card || !engines[engineType]) return;
         const e=engines[engineType];
         card.dataset.currentEngine=engineType;
