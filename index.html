@@ -338,6 +338,55 @@
       backdrop-filter: blur(10px);
     }
 
+    /* Dashboard widget controls */
+    .card { min-width: 0; }
+    .drag-handle, .resize-handle, .remove-widget { touch-action: none; }
+    .card.dragging { z-index: 2000; transition: none !important; }
+    .drag-handle {
+      position:absolute; top:10px; right:48px; width:30px; height:30px;
+      display:flex; align-items:center; justify-content:center;
+      border-radius:10px; background:rgba(255,255,255,.1);
+      border:1px solid rgba(255,255,255,.15); color:rgba(255,255,255,.75);
+      cursor:grab; user-select:none; z-index:20;
+    }
+    .drag-handle:active { cursor:grabbing; }
+    .resize-handle {
+      position:absolute; right:8px; bottom:8px; width:22px; height:22px;
+      cursor:nwse-resize; z-index:20;
+      border-right:3px solid rgba(255,255,255,.65);
+      border-bottom:3px solid rgba(255,255,255,.65);
+      border-radius:0 0 5px 0;
+    }
+    .remove-widget {
+      position:absolute; top:10px; right:10px; width:30px; height:30px;
+      padding:0; border-radius:10px; background:rgba(255,70,90,.22);
+      border:1px solid rgba(255,100,120,.35); color:white; z-index:20;
+      cursor:pointer; font-size:20px; line-height:1;
+    }
+    #widgetMenu {
+      position:fixed; left:20px; top:20px; z-index:3000;
+      display:flex; gap:8px; flex-wrap:wrap;
+    }
+    #widgetMenu button {
+      background:rgba(20,25,40,.85); border:1px solid rgba(255,255,255,.18);
+      backdrop-filter:blur(10px);
+    }
+    #widgetPicker {
+      position:fixed; inset:0; z-index:4000; display:flex;
+      align-items:center; justify-content:center;
+      background:rgba(0,0,0,.45); backdrop-filter:blur(5px);
+    }
+    .picker-inner {
+      width:min(360px,90vw); padding:24px; border-radius:22px;
+      background:#172033; border:1px solid rgba(255,255,255,.2);
+      box-shadow:0 20px 60px rgba(0,0,0,.5);
+      display:flex; flex-direction:column; gap:10px;
+    }
+    .picker-inner h3 { margin-bottom:8px; }
+    .picker-inner button { width:100%; }
+    .light .picker-inner { background:#f8fafc; color:#111827; }
+    .light #widgetMenu button { background:rgba(255,255,255,.85); color:#111827; }
+
     /* Suggestions dropdown styles */
     .suggestions-dropdown {
       position: absolute;
@@ -532,15 +581,20 @@
 
   <script>
 
-    // Movable widgets
+    // Movable, resizable, add/remove widgets
     (() => {
       const STORAGE_KEY = 'aiGeneratedWebsiteWidgetPositions';
+      const REMOVED_KEY = 'aiGeneratedWebsiteRemovedWidgets';
       let positions = {};
-      try {
-        positions = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
-      } catch {
-        positions = {};
-      }
+      let removed = new Set();
+
+      try { positions = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); } catch {}
+      try { removed = new Set(JSON.parse(localStorage.getItem(REMOVED_KEY) || '[]')); } catch {}
+
+      const save = () => {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(positions));
+        localStorage.setItem(REMOVED_KEY, JSON.stringify([...removed]));
+      };
 
       const cards = Array.from(document.querySelectorAll('.card'));
 
@@ -548,85 +602,193 @@
         const id = card.dataset.widgetId || `widget-${index}`;
         card.dataset.widgetId = id;
 
-        // Add a dedicated drag handle so inputs, links, and buttons remain easy to use.
+        if (removed.has(id)) {
+          card.remove();
+          return;
+        }
+
         const handle = document.createElement('div');
         handle.className = 'drag-handle';
         handle.title = 'Drag widget';
         handle.setAttribute('aria-label', 'Drag widget');
         handle.textContent = '⠿';
-        card.appendChild(handle);
+
+        const resize = document.createElement('div');
+        resize.className = 'resize-handle';
+        resize.title = 'Resize widget';
+        resize.setAttribute('aria-label', 'Resize widget');
+
+        const remove = document.createElement('button');
+        remove.className = 'remove-widget';
+        remove.type = 'button';
+        remove.title = 'Remove widget';
+        remove.textContent = '×';
+
+        card.append(handle, resize, remove);
 
         const saved = positions[id];
-        if (saved && Number.isFinite(saved.x) && Number.isFinite(saved.y)) {
-          card.style.setProperty('--drag-x', saved.x + 'px');
-          card.style.setProperty('--drag-y', saved.y + 'px');
+        if (saved) {
+          if (Number.isFinite(saved.x)) card.style.setProperty('--drag-x', saved.x + 'px');
+          if (Number.isFinite(saved.y)) card.style.setProperty('--drag-y', saved.y + 'px');
+          if (Number.isFinite(saved.w)) card.style.width = saved.w + 'px';
+          if (Number.isFinite(saved.h)) card.style.height = saved.h + 'px';
         }
 
-        let startX = 0;
-        let startY = 0;
-        let startOffsetX = 0;
-        let startOffsetY = 0;
-        let dragging = false;
+        let mode = null;
+        let sx = 0, sy = 0, ox = 0, oy = 0, ow = 0, oh = 0;
 
-        handle.addEventListener('pointerdown', (event) => {
+        const begin = (event, type) => {
           event.preventDefault();
           event.stopPropagation();
-
-          const currentX = parseFloat(getComputedStyle(card).getPropertyValue('--drag-x')) || 0;
-          const currentY = parseFloat(getComputedStyle(card).getPropertyValue('--drag-y')) || 0;
-
-          startX = event.clientX;
-          startY = event.clientY;
-          startOffsetX = currentX;
-          startOffsetY = currentY;
-          dragging = true;
-
+          mode = type;
+          sx = event.clientX;
+          sy = event.clientY;
+          ox = parseFloat(getComputedStyle(card).getPropertyValue('--drag-x')) || 0;
+          oy = parseFloat(getComputedStyle(card).getPropertyValue('--drag-y')) || 0;
+          const rect = card.getBoundingClientRect();
+          ow = rect.width;
+          oh = rect.height;
           card.classList.add('dragging');
-          handle.setPointerCapture(event.pointerId);
-        });
-
-        handle.addEventListener('pointermove', (event) => {
-          if (!dragging) return;
-
-          const x = startOffsetX + event.clientX - startX;
-          const y = startOffsetY + event.clientY - startY;
-
-          card.style.setProperty('--drag-x', x + 'px');
-          card.style.setProperty('--drag-y', y + 'px');
-        });
-
-        const finishDrag = (event) => {
-          if (!dragging) return;
-          dragging = false;
-          card.classList.remove('dragging');
-
-          const x = parseFloat(getComputedStyle(card).getPropertyValue('--drag-x')) || 0;
-          const y = parseFloat(getComputedStyle(card).getPropertyValue('--drag-y')) || 0;
-
-          positions[id] = { x, y };
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(positions));
-
-          try {
-            handle.releasePointerCapture(event.pointerId);
-          } catch {}
+          event.currentTarget.setPointerCapture?.(event.pointerId);
         };
 
-        handle.addEventListener('pointerup', finishDrag);
-        handle.addEventListener('pointercancel', finishDrag);
-      });
+        const move = (event) => {
+          if (!mode) return;
+          event.preventDefault();
 
-      const resetButton = document.createElement('button');
-      resetButton.id = 'resetWidgets';
-      resetButton.textContent = 'Reset Widgets';
-      resetButton.title = 'Put all widgets back in their original positions';
-      resetButton.addEventListener('click', () => {
-        localStorage.removeItem(STORAGE_KEY);
-        cards.forEach(card => {
-          card.style.setProperty('--drag-x', '0px');
-          card.style.setProperty('--drag-y', '0px');
+          if (mode === 'move') {
+            const x = ox + event.clientX - sx;
+            const y = oy + event.clientY - sy;
+            card.style.setProperty('--drag-x', x + 'px');
+            card.style.setProperty('--drag-y', y + 'px');
+          } else {
+            const w = Math.max(220, ow + event.clientX - sx);
+            const h = Math.max(130, oh + event.clientY - sy);
+            card.style.width = w + 'px';
+            card.style.height = h + 'px';
+          }
+        };
+
+        const finish = (event) => {
+          if (!mode) return;
+          if (mode === 'move') {
+            positions[id] = {
+              ...(positions[id] || {}),
+              x: parseFloat(getComputedStyle(card).getPropertyValue('--drag-x')) || 0,
+              y: parseFloat(getComputedStyle(card).getPropertyValue('--drag-y')) || 0
+            };
+          } else {
+            positions[id] = {
+              ...(positions[id] || {}),
+              w: card.getBoundingClientRect().width,
+              h: card.getBoundingClientRect().height
+            };
+          }
+          save();
+          mode = null;
+          card.classList.remove('dragging');
+          try { event.currentTarget.releasePointerCapture?.(event.pointerId); } catch {}
+        };
+
+        handle.addEventListener('pointerdown', e => begin(e, 'move'));
+        resize.addEventListener('pointerdown', e => begin(e, 'resize'));
+        handle.addEventListener('pointermove', move);
+        resize.addEventListener('pointermove', move);
+        handle.addEventListener('pointerup', finish);
+        resize.addEventListener('pointerup', finish);
+        handle.addEventListener('pointercancel', finish);
+        resize.addEventListener('pointercancel', finish);
+
+        remove.addEventListener('click', e => {
+          e.preventDefault();
+          e.stopPropagation();
+          removed.add(id);
+          card.remove();
+          save();
         });
       });
-      document.body.appendChild(resetButton);
+
+      // Prevent dashboard controls from reaching the card's navigation handlers.
+      document.addEventListener('click', e => {
+        if (e.target.closest('.drag-handle, .resize-handle, .remove-widget, #widgetMenu, #resetWidgets')) {
+          e.stopPropagation();
+        }
+      }, true);
+
+      const controls = document.createElement('div');
+      controls.id = 'widgetMenu';
+      controls.innerHTML = `
+        <button type="button" id="addWidget">＋ Add Widget</button>
+        <button type="button" id="resetWidgets">Reset Widgets</button>
+      `;
+      document.body.appendChild(controls);
+
+      document.getElementById('resetWidgets').addEventListener('click', e => {
+        e.preventDefault();
+        e.stopPropagation();
+        localStorage.removeItem(STORAGE_KEY);
+        localStorage.removeItem(REMOVED_KEY);
+        location.reload();
+      });
+
+      document.getElementById('addWidget').addEventListener('click', e => {
+        e.preventDefault();
+        e.stopPropagation();
+        showWidgetPicker();
+      });
+
+      function showWidgetPicker() {
+        if (document.getElementById('widgetPicker')) return;
+
+        const picker = document.createElement('div');
+        picker.id = 'widgetPicker';
+        picker.innerHTML = `
+          <div class="picker-inner">
+            <h3>Add Widget</h3>
+            <button type="button" data-add="clock">🕐 Live Clock</button>
+            <button type="button" data-add="notes">📝 Quick Notes</button>
+            <button type="button" data-add="github">🐙 GitHub</button>
+            <button type="button" id="closePicker">Cancel</button>
+          </div>
+        `;
+        document.body.appendChild(picker);
+
+        picker.querySelectorAll('[data-add]').forEach(btn => {
+          btn.addEventListener('click', e => {
+            e.preventDefault();
+            e.stopPropagation();
+            const type = btn.dataset.add;
+            if (type === 'clock') addClock();
+            if (type === 'notes') addNotes();
+            if (type === 'github') addGithub();
+            picker.remove();
+          });
+        });
+        picker.querySelector('#closePicker').addEventListener('click', () => picker.remove());
+      }
+
+      function makeNewCard(id, html, className='card') {
+        if (document.querySelector(`[data-widget-id="${id}"]`)) return;
+        removed.delete(id);
+        const card = document.createElement('div');
+        card.className = className;
+        card.dataset.widgetId = id;
+        card.innerHTML = html;
+        document.querySelector('.tools')?.appendChild(card);
+        // Reload once so the same drag/resize wiring is applied.
+        save();
+        location.reload();
+      }
+
+      function addClock() {
+        makeNewCard('extra-clock', '<h2>Live Clock</h2><div class="clock">00:00:00</div>');
+      }
+      function addNotes() {
+        makeNewCard('extra-notes', '<h2>Quick Notes</h2><textarea placeholder="Write something..." style="width:100%;height:120px;border:none;outline:none;resize:none;padding:15px;border-radius:16px;"></textarea>');
+      }
+      function addGithub() {
+        makeNewCard('extra-github', '<h2>GitHub</h2><button type="button" style="width:100%;background:#24292f;color:white;" onclick="window.location.href=\'https://github.com\'">Open GitHub</button>');
+      }
     })();
 
     // Debounce function for API calls
