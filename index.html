@@ -990,9 +990,12 @@
         const type=document.getElementById('customWidgetType').value;
         const url=document.getElementById('customWidgetUrl').value.trim();
         const buttonText=document.getElementById('customWidgetButton').value.trim()||'Open';
+        const textContent=document.getElementById('customWidgetText').value;
         const apiKey=document.getElementById('customWidgetApiKey').value.trim();
 
-        if(!url){ alert('Please enter a URL.'); return; }
+        if(type==='text'){
+          // Pure text widgets do not require a URL.
+        } else if(!url){ alert('Please enter a URL.'); return; }
         if(!/^https?:\/\//i.test(url)){ alert('The URL must start with http:// or https://'); return; }
 
         const card=document.createElement('div');
@@ -1001,7 +1004,9 @@
         card.dataset.customWidget='true';
 
         const safeTitle=escapeHtml(title);
-        if(type==='button' || type==='link'){
+        if(type==='text'){
+          card.innerHTML='<h2>'+safeTitle+'</h2><div class="custom-widget-text">'+escapeHtml(textContent).replace(/\n/g,'<br>')+'</div>';
+        } else if(type==='button' || type==='link'){
           card.innerHTML='<h2>'+safeTitle+'</h2><button type="button" class="custom-widget-button">'+escapeHtml(buttonText)+'</button>';
           card.querySelector('button').addEventListener('click',ev=>{
             ev.preventDefault();ev.stopPropagation();
@@ -1083,8 +1088,8 @@
             '<h3>Custom Widget</h3>' +
             '<div class="custom-widget-form">' +
             '<label>Widget title</label><input id="customWidgetTitle" placeholder="My Widget">' +
-            '<label>Type</label><select id="customWidgetType"><option value="button">Button / Link</option><option value="iframe">Embedded page</option><option value="api">API data</option></select>' +
-            '<label>URL</label><input id="customWidgetUrl" placeholder="https://example.com">' +
+            '<label>Type</label><select id="customWidgetType"><option value="button">Button / Link</option><option value="text">Pure Text</option><option value="iframe">Embedded page</option><option value="api">API data</option></select>' +
+            '<label>Text content (pure text only)</label><textarea id="customWidgetText" placeholder="Type anything you want here..."></textarea><label>URL</label><input id="customWidgetUrl" placeholder="https://example.com">' +
             '<label>Button text (button/link only)</label><input id="customWidgetButton" placeholder="Open">' +
             '<label>API key (API only, optional)</label><input id="customWidgetApiKey" type="password" placeholder="Bearer token">' +
             '<div class="custom-widget-help">API keys are stored only in this browser and sent from the page, so do not use a secret that must stay private. Browser CORS rules can prevent some APIs from loading.</div>' +
