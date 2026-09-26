@@ -935,22 +935,33 @@
 
       document.getElementById('widget-focus-button').addEventListener('click',ev=>{
         ev.preventDefault();ev.stopPropagation();
-        const choices=[
-          ['duckInput','DuckDuckGo Search'],
-          ['googleInput','Google Search'],
-          ['youtubeInput','YouTube Search'],
-          ['wikiInput','Wikipedia Search'],
-          ['notesBox','Quick Notes']
-        ];
-        const current=localStorage.getItem('startupFocus')||'duckInput';
-        const choice=prompt('Choose the widget to focus when the site opens:\n\n'+choices.map((x,i)=>(i+1)+'. '+x[1]+(x[0]===current?' (current)':'')).join('\n')+'\n\nEnter a number:');
-        const n=Number(choice);
-        if(Number.isInteger(n)&&choices[n-1]){
-          localStorage.setItem('startupFocus',choices[n-1][0]);
-          alert('Startup focus set to '+choices[n-1][1]+'.');
-        }
-      });
+        const button=ev.currentTarget;
+        const oldText=button.textContent;
+        button.textContent='Click a widget...';
+        document.body.classList.add('choosing-startup-focus');
 
+        const cards=[...document.querySelectorAll('#widget-canvas .card')];
+        const handlers=[];
+        const finish=card=>{
+          const input=card.querySelector('input, textarea');
+          if(!input) return;
+          localStorage.setItem('startupFocus',input.id);
+          button.textContent='Startup Focus: '+(card.querySelector('.engine-title')?.textContent || card.querySelector('h2')?.textContent || 'Widget');
+          cleanup();
+        };
+        const cleanup=()=>{
+          cards.forEach((card,i)=>card.removeEventListener('click',handlers[i],true));
+          document.body.classList.remove('choosing-startup-focus');
+          if(button.textContent==='Click a widget...') button.textContent=oldText;
+        };
+        cards.forEach((card,i)=>{
+          handlers[i]=e=>{
+            e.preventDefault();e.stopPropagation();
+            finish(card);
+          };
+          card.addEventListener('click',handlers[i],true);
+        });
+      });
       document.getElementById('widget-restore-search').addEventListener('click',ev=>{
         ev.preventDefault();ev.stopPropagation();
         restoreSearchWidget();
