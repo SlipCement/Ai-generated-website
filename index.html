@@ -886,6 +886,7 @@
       toolbar.id='widget-toolbar';
       toolbar.innerHTML='<button type="button" id="widget-edit-toggle">Edit Widgets</button>' +
         '<button type="button" class="widget-edit-control" id="widget-add-button">Add Widget</button>' +
+        '<button type="button" class="widget-edit-control" id="widget-focus-button">Set Startup Focus</button>' +
         '<button type="button" class="widget-edit-control" id="widget-restore-search">Restore Search</button>' +
         '<button type="button" class="widget-edit-control" id="widget-reset-button">Reset Widgets</button>' +
         '<button type="button" id="widget-snap-toggle">🧲 Snap: ON</button>';
@@ -930,6 +931,24 @@
         if(!confirm('Reset all widget positions, sizes, and removed widgets?')) return;
         localStorage.removeItem(POS_KEY);localStorage.removeItem(REMOVED_KEY);
         location.reload();
+      });
+
+      document.getElementById('widget-focus-button').addEventListener('click',ev=>{
+        ev.preventDefault();ev.stopPropagation();
+        const choices=[
+          ['duckInput','DuckDuckGo Search'],
+          ['googleInput','Google Search'],
+          ['youtubeInput','YouTube Search'],
+          ['wikiInput','Wikipedia Search'],
+          ['notesBox','Quick Notes']
+        ];
+        const current=localStorage.getItem('startupFocus')||'duckInput';
+        const choice=prompt('Choose the widget to focus when the site opens:\n\n'+choices.map((x,i)=>(i+1)+'. '+x[1]+(x[0]===current?' (current)':'')).join('\n')+'\n\nEnter a number:');
+        const n=Number(choice);
+        if(Number.isInteger(n)&&choices[n-1]){
+          localStorage.setItem('startupFocus',choices[n-1][0]);
+          alert('Startup focus set to '+choices[n-1][1]+'.');
+        }
       });
 
       document.getElementById('widget-restore-search').addEventListener('click',ev=>{
@@ -1473,8 +1492,10 @@
         const notesBox = document.getElementById('notesBox');
         if (notesBox) notesBox.value = saved;
       }
-      // Focus on DuckDuckGo search bar on page load
-      document.getElementById('duckInput').focus();
+      // Focus the user's chosen startup widget/input.
+      const startupFocus = localStorage.getItem('startupFocus') || 'duckInput';
+      const startupTarget = document.getElementById(startupFocus);
+      if (startupTarget && typeof startupTarget.focus === 'function') startupTarget.focus();
     });
 
     // Add Enter/Return key support for search inputs
