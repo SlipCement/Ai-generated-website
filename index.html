@@ -1098,17 +1098,25 @@
             '</div>';
 
           const typeSelect=picker.querySelector('#customWidgetType');
-          const textField=picker.querySelector('#customWidgetText').parentElement;
-          const urlField=picker.querySelector('#customWidgetUrl').parentElement;
-          const buttonField=picker.querySelector('#customWidgetButton').parentElement;
-          const apiField=picker.querySelector('#customWidgetApiKey').parentElement;
+          const textInput=picker.querySelector('#customWidgetText');
+          const urlInput=picker.querySelector('#customWidgetUrl');
+          const buttonInput=picker.querySelector('#customWidgetButton');
+          const apiInput=picker.querySelector('#customWidgetApiKey');
+          const textLabel=textInput.previousElementSibling;
+          const urlLabel=urlInput.previousElementSibling;
+          const buttonLabel=buttonInput.previousElementSibling;
+          const apiLabel=apiInput.previousElementSibling;
           const apiHelp=picker.querySelector('.custom-widget-help');
+          const setField=(label,input,show)=>{
+            label.style.display=show?'':'none';
+            input.style.display=show?'':'none';
+          };
           const updateCustomFields=()=>{
             const type=typeSelect.value;
-            textField.style.display=type==='text'?'flex':'none';
-            urlField.style.display=type==='text'?'none':'flex';
-            buttonField.style.display=type==='button'?'flex':'none';
-            apiField.style.display=type==='api'?'flex':'none';
+            setField(textLabel,textInput,type==='text');
+            setField(urlLabel,urlInput,type!=='text');
+            setField(buttonLabel,buttonInput,type==='button');
+            setField(apiLabel,apiInput,type==='api');
             apiHelp.style.display=type==='api'?'block':'none';
           };
           typeSelect.addEventListener('change',updateCustomFields);
