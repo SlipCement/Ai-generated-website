@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>:D</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=2">
   <link rel="icon" type="image/png" href="/favicon.png">
   <style>
     * {
@@ -197,7 +198,7 @@
       padding: 12px 16px;
       border-radius: 12px;
       cursor: pointer;
-      background: linear-gradient(135deg, #fbbf24 0%, #f97316 48%, #dc2626 100%);
+      background: var(--button-gradient, linear-gradient(135deg, #fbbf24 0%, #f97316 48%, #dc2626 100%));
       color: white;
       font-weight: bold;
       transition: 0.2s ease;
@@ -289,7 +290,7 @@
     }
 
     .light button:not(.theme-toggle) {
-      background: linear-gradient(135deg, #fde68a 0%, #fb923c 48%, #b91c1c 100%);
+      background: var(--button-gradient, linear-gradient(135deg, #fde68a 0%, #fb923c 48%, #b91c1c 100%));
     }
 
     .light h2 {
@@ -339,8 +340,7 @@
     }
     .tools > div:first-child { display: contents !important; }
 
-    /* Keep the dashboard wider than the viewport so the page can scroll
-       horizontally when widgets are dragged/resized past the visible edge. */
+    /* Keep the dashboard within the viewport; widgets can resize without creating page-wide horizontal scrolling. */
     @media (min-width: 1201px) {
       .tools { width: 1200px !important; }
     }
@@ -508,6 +508,32 @@
     }
     #widget-edit-panel textarea { min-height: 110px; resize: vertical; }
     #widget-edit-panel input[type="color"] { height: 44px; padding: 4px; cursor: pointer; }
+    .widget-color-row { display:flex; align-items:center; gap:10px; }
+    .widget-color-preview {
+      width:44px; height:44px; border-radius:11px; flex:0 0 44px;
+      border:3px solid #273244; background:transparent;
+      box-shadow:0 0 0 1px rgba(255,255,255,.18), inset 0 0 0 1px rgba(0,0,0,.2);
+      transition:border-color .15s ease, box-shadow .15s ease;
+    }
+    #widgetEditColor { width:100%; }
+    .gradient-preview {
+      height:42px; border-radius:12px; border:1px solid rgba(255,255,255,.2);
+      box-shadow:inset 0 0 0 1px rgba(255,255,255,.08);
+      margin:2px 0 5px;
+    }
+    #gradient-picker {
+      position:fixed; top:70px; left:20px; z-index:8000;
+      display:none; width:min(340px,92vw); padding:15px; border-radius:16px;
+      background:rgba(20,20,30,.98); border:1px solid rgba(255,255,255,.18);
+      box-shadow:0 18px 55px rgba(0,0,0,.5); backdrop-filter:blur(12px);
+    }
+    #gradient-picker.show { display:block; }
+    .gradient-options { display:grid; grid-template-columns:1fr 1fr; gap:7px; }
+    .gradient-option { min-height:42px; border:1px solid rgba(255,255,255,.2)!important; }
+    .gradient-custom { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:8px; }
+    .gradient-custom label { font-size:12px; opacity:.75; }
+    .gradient-custom input { width:100%; height:36px; padding:3px; }
+
     .widget-edit-actions { display: flex; gap: 8px; margin-top: 6px; }
     .widget-edit-actions button { flex: 1; }
     #widget-edit-cancel { background: rgba(255,255,255,.12) !important; }
@@ -946,8 +972,9 @@
         }
         if(data.color){
           card.dataset.widgetColor=data.color;
-          card.style.background=data.color;
-          card.style.borderColor=data.color;
+          card.style.background='';
+          card.style.border='2px solid '+data.color;
+          card.style.setProperty('--widget-outline-color',data.color);
         }
         // innerHTML replaces the content, so explicitly restore the dimensions
         // and overflow state after editing.
@@ -972,13 +999,21 @@
           '<option value="search">Search</option><option value="clock">Live Clock</option><option value="notes">Quick Notes</option><option value="github">GitHub</option><option value="text">Text</option><option value="button">Button</option></select>'+
           '<label>Title</label><input id="widgetEditTitle">'+
           '<label>Text / button text</label><textarea id="widgetEditText"></textarea>'+
-          '<label>Color</label><input id="widgetEditColor" type="color" value="#273244">'+
+          '<label>Outline color</label><div class="widget-color-row"><div id="widgetEditColorPreview" class="widget-color-preview"></div><input id="widgetEditColor" type="color" value="#273244"></div>'+
           '<div class="widget-edit-actions"><button type="button" id="widget-edit-cancel">Cancel</button><button type="button" id="widget-edit-save">Save</button></div>';
         panel.querySelector('#widgetEditType').value=current.type||'text';
         panel.querySelector('#widgetEditTitle').value=current.title||'Widget';
         panel.querySelector('#widgetEditText').value=current.text||'';
         const bg=current.color || '#273244';
-        panel.querySelector('#widgetEditColor').value=/^#[0-9a-f]{6}$/i.test(bg)?bg:'#273244';
+        const colorInput=panel.querySelector('#widgetEditColor');
+        const colorPreview=panel.querySelector('#widgetEditColorPreview');
+        colorInput.value=/^#[0-9a-f]{6}$/i.test(bg)?bg:'#273244';
+        const updateColorPreview=()=>{
+          colorPreview.style.borderColor=colorInput.value;
+          colorPreview.style.boxShadow='0 0 0 2px '+colorInput.value+'33, inset 0 0 0 1px rgba(0,0,0,.2)';
+        };
+        colorInput.addEventListener('input',updateColorPreview);
+        updateColorPreview();
         modal.appendChild(panel); document.body.appendChild(modal);
         const close=()=>modal.remove();
         panel.querySelector('#widget-edit-cancel').onclick=close;
@@ -1144,7 +1179,7 @@
         '<button type="button" class="widget-edit-control" id="widget-add-button">Add Widget</button>' +
         '<button type="button" class="widget-edit-control" id="widget-restore-search">Restore Search</button>' +
         '<button type="button" class="widget-edit-control" id="widget-reset-button">Reset Widgets</button>' +
-        '<button type="button" class="widget-edit-control" id="widget-presets-button">Presets</button>' +
+        '<button type="button" class="widget-edit-control" id="widget-presets-button">Presets</button><button type="button" class="widget-edit-control" id="widget-gradient-button">Change Gradient</button>' +
         '<button type="button" id="widget-snap-toggle">🧲 Snap: ON</button>';
       document.body.appendChild(toolbar);
 
@@ -1384,6 +1419,40 @@
           picker.querySelector('#custom-widget-create').onclick=()=>{makeCustomWidget();picker.remove();};
         });
       });
+
+      // Button gradient selector
+      (() => {
+        const gradients = [
+          ['Sunset','linear-gradient(135deg,#fbbf24 0%,#f97316 48%,#dc2626 100%)'],
+          ['Ocean','linear-gradient(135deg,#38bdf8 0%,#2563eb 50%,#7c3aed 100%)'],
+          ['Forest','linear-gradient(135deg,#bef264 0%,#22c55e 50%,#15803d 100%)'],
+          ['Candy','linear-gradient(135deg,#f9a8d4 0%,#c084fc 50%,#6366f1 100%)'],
+          ['Fire','linear-gradient(135deg,#fde047 0%,#ef4444 52%,#991b1b 100%)'],
+          ['Mono','linear-gradient(135deg,#f8fafc 0%,#64748b 50%,#0f172a 100%)']
+        ];
+        const key='aiGeneratedButtonGradient';
+        const saved=localStorage.getItem(key);
+        if(saved) document.documentElement.style.setProperty('--button-gradient',saved);
+        const panel=document.createElement('div');
+        panel.id='gradient-picker';
+        panel.innerHTML='<strong>Change Button Gradient</strong><div class="gradient-options"></div><div class="gradient-custom"><label>Start<input id="gradientStart" type="color" value="#fbbf24"></label><label>End<input id="gradientEnd" type="color" value="#dc2626"></label></div><div class="gradient-preview" id="gradientPreview"></div><button type="button" id="gradientApply">Apply Custom Gradient</button><button type="button" id="gradientCancel">Cancel</button>';
+        document.body.appendChild(panel);
+        const options=panel.querySelector('.gradient-options');
+        gradients.forEach(([name,value])=>{
+          const b=document.createElement('button'); b.type='button'; b.className='gradient-option'; b.textContent=name; b.style.background=value;
+          b.onclick=()=>{document.documentElement.style.setProperty('--button-gradient',value);localStorage.setItem(key,value);panel.classList.remove('show');};
+          options.appendChild(b);
+        });
+        const start=panel.querySelector('#gradientStart'), end=panel.querySelector('#gradientEnd'), preview=panel.querySelector('#gradientPreview');
+        const update=()=>{preview.style.background='linear-gradient(135deg,'+start.value+' 0%,'+end.value+' 100%)';};
+        start.addEventListener('input',update); end.addEventListener('input',update); update();
+        panel.querySelector('#gradientApply').onclick=()=>{
+          const value='linear-gradient(135deg,'+start.value+' 0%,'+end.value+' 100%)';
+          document.documentElement.style.setProperty('--button-gradient',value); localStorage.setItem(key,value); panel.classList.remove('show');
+        };
+        panel.querySelector('#gradientCancel').onclick=()=>panel.classList.remove('show');
+        document.getElementById('widget-gradient-button').addEventListener('click',ev=>{ev.preventDefault();ev.stopPropagation();panel.classList.toggle('show');});
+      })();
 
       // Theme selector
       (() => {
@@ -1938,8 +2007,37 @@ document.querySelectorAll('input[type="search"]').forEach(input => {
       const name=document.createElement('input');name.placeholder='Preset name...';
       const save=document.createElement('button');save.textContent='Save Current Layout';
       save.onclick=()=>{const n=name.value.trim()||'Preset '+(Object.keys(presets).length+1);presets[n]=getWidgetPreset();localStorage.setItem('aiGeneratedWidgetPresets',JSON.stringify(presets));overlay.remove();};
+      const transferTitle=document.createElement('strong');
+      transferTitle.textContent='Transfer between devices';
+      transferTitle.style.marginTop='8px';
+      const transferHelp=document.createElement('div');
+      transferHelp.textContent='Export your presets to a JSON file, then import that file on another device.';
+      transferHelp.style.cssText='font-size:12px;opacity:.7;line-height:1.4;';
+      const exportButton=document.createElement('button');
+      exportButton.textContent='Export Presets';
+      exportButton.onclick=()=>{
+        const payload={version:1,presets:JSON.parse(localStorage.getItem('aiGeneratedWidgetPresets')||'{}'),generatedAt:new Date().toISOString()};
+        const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
+        const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='ai-generated-website-presets.json'; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+      };
+      const importButton=document.createElement('button'); importButton.textContent='Import Presets';
+      const fileInput=document.createElement('input'); fileInput.type='file'; fileInput.accept='.json,application/json'; fileInput.style.display='none';
+      fileInput.onchange=async()=>{
+        const file=fileInput.files?.[0]; if(!file)return;
+        try{
+          const data=JSON.parse(await file.text());
+          const incoming=data.presets && typeof data.presets==='object' ? data.presets : data;
+          const current=JSON.parse(localStorage.getItem('aiGeneratedWidgetPresets')||'{}');
+          Object.assign(current,incoming);
+          localStorage.setItem('aiGeneratedWidgetPresets',JSON.stringify(current));
+          alert('Presets imported! Reopen Presets to see them.');
+          overlay.remove();
+        }catch{ alert('That file is not a valid preset file.'); }
+        fileInput.value='';
+      };
+      importButton.onclick=()=>fileInput.click();
       const close=document.createElement('button');close.textContent='Close';close.onclick=()=>overlay.remove();
-      panel.append(list,name,save,close);overlay.append(panel);document.body.append(overlay);
+      panel.append(list,name,save,transferTitle,transferHelp,exportButton,importButton,fileInput,close);overlay.append(panel);document.body.append(overlay);
     }
     document.getElementById('widget-presets-button')?.addEventListener('click',openPresets);
 
