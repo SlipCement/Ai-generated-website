@@ -19,7 +19,7 @@
       background: linear-gradient(135deg, #0f172a, #1e293b, #111827);
       color: white;
       min-height: 100vh;
-      overflow-x: auto;
+      overflow-x: hidden;
       padding: 30px;
       -webkit-user-select: none;
       user-select: none;
@@ -197,7 +197,7 @@
       padding: 12px 16px;
       border-radius: 12px;
       cursor: pointer;
-      background: linear-gradient(135deg, #86efac 0%, #22c55e 45%, #15803d 100%);
+      background: linear-gradient(135deg, #fbbf24 0%, #f97316 48%, #dc2626 100%);
       color: white;
       font-weight: bold;
       transition: 0.2s ease;
@@ -289,7 +289,7 @@
     }
 
     .light button:not(.theme-toggle) {
-      background: linear-gradient(135deg, #bbf7d0 0%, #4ade80 45%, #166534 100%);
+      background: linear-gradient(135deg, #fde68a 0%, #fb923c 48%, #b91c1c 100%);
     }
 
     .light h2 {
@@ -386,7 +386,8 @@
     .widget-edit-button,
     .widget-duplicate-button,
     .widget-remove-button,
-    .widget-resize-handle { display: none !important; }
+    .widget-resize-handle,
+    .widget-resize-x-handle { display: none !important; }
 
     body.widget-editing .widget-drag-handle,
     body.widget-editing .widget-edit-button,
@@ -454,6 +455,31 @@
       color: rgba(20,20,25,.8);
       font-size: 12px;
       line-height: 14px;
+      font-weight: 900;
+    }
+
+    body.widget-editing .widget-resize-x-handle {
+      display: block !important;
+      position: absolute !important;
+      right: 3px !important; top: 50% !important;
+      transform: translateY(-50%) !important;
+      width: 14px !important; height: 72px !important;
+      padding: 0 !important; margin: 0 !important;
+      cursor: ew-resize !important; touch-action: none !important;
+      -webkit-user-select: none !important; user-select: none !important;
+      z-index: 110 !important;
+      border: 0 !important;
+      border-radius: 999px !important;
+      background: rgba(255,255,255,.72) !important;
+      box-shadow: 0 0 0 2px rgba(0,0,0,.18), 0 2px 8px rgba(0,0,0,.25) !important;
+    }
+    body.widget-editing .widget-resize-x-handle::before {
+      content: "↔";
+      display: block;
+      text-align: center;
+      color: rgba(20,20,25,.8);
+      font-size: 12px;
+      line-height: 72px;
       font-weight: 900;
     }
 
@@ -577,6 +603,13 @@
     .engine-picker button {
       display: block; width: 100%; margin: 3px 0; text-align: left;
       background: rgba(255,255,255,.08);
+    }
+    .engine-picker .engine-picker-cancel {
+      text-align: center;
+      background: rgba(229,72,77,.18) !important;
+      border: 1px solid rgba(229,72,77,.45);
+      color: #fff;
+      margin-bottom: 7px;
     }
 
     @media (max-width: 800px) {
@@ -974,7 +1007,7 @@
         clone.dataset.widgetReady='false';
         delete clone.dataset.editorJustFinished;
         clone.querySelectorAll('[id]').forEach(el=>{el.id=el.id+'-'+newId;});
-        clone.querySelectorAll('.widget-drag-handle,.widget-edit-button,.widget-duplicate-button,.widget-remove-button,.widget-resize-handle').forEach(el=>el.remove());
+        clone.querySelectorAll('.widget-drag-handle,.widget-edit-button,.widget-duplicate-button,.widget-remove-button,.widget-resize-handle,.widget-resize-x-handle').forEach(el=>el.remove());
         canvas.appendChild(clone);
         const base=positions[oldId]||{};
         positions[newId]={left:Number.isFinite(base.left)?base.left:20,top:Number.isFinite(base.top)?base.top:20,x:(base.x||0)+40,y:(base.y||0)+40,w:card.offsetWidth,h:card.offsetHeight};
@@ -1025,10 +1058,12 @@
         close.type='button'; close.className='widget-remove-button'; close.textContent='×'; close.title='Remove widget';
         const resize = document.createElement('div');
         resize.className='widget-resize-handle'; resize.title='Resize height';
-        card.append(drag,edit,duplicate,close,resize);
+        const resizeX = document.createElement('div');
+        resizeX.className='widget-resize-x-handle'; resizeX.title='Resize width';
+        card.append(drag,edit,duplicate,close,resize,resizeX);
         card.dataset.widgetReady='true';
 
-        let action=null,pointerId=null,sx=0,sy=0,startX=0,startY=0,startH=0;
+        let action=null,pointerId=null,sx=0,sy=0,startX=0,startY=0,startH=0,startW=0;
 
         function begin(ev,type) {
           if (!document.body.classList.contains('widget-editing')) return;
@@ -1037,8 +1072,9 @@
           startX=parseFloat(card.style.getPropertyValue('--widget-x'))||0;
           startY=parseFloat(card.style.getPropertyValue('--widget-y'))||0;
           startH=card.offsetHeight;
+          startW=card.offsetWidth;
           card.classList.toggle('is-dragging',type==='move');
-          card.classList.toggle('is-resizing',type==='resize');
+          card.classList.toggle('is-resizing',type==='resize' || type==='resize-x');
           try { ev.currentTarget.setPointerCapture(pointerId); } catch {}
         }
 
@@ -1054,6 +1090,10 @@
             // This lets the widget get both taller AND shorter.
             const nextH=Math.max(80,snap(startH+dy));
             card.style.setProperty('--widget-height',nextH+'px');
+          } else if(action==='resize-x'){
+            // Horizontal resizing changes only width and never the widget position.
+            const nextW=Math.max(220,snap(startW+dx));
+            card.style.setProperty('--widget-width',nextW+'px');
           }
           updateCanvasHeight();
         }
@@ -1078,9 +1118,10 @@
 
         drag.addEventListener('pointerdown',ev=>begin(ev,'move'));
         resize.addEventListener('pointerdown',ev=>begin(ev,'resize'));
-        drag.addEventListener('pointermove',move); resize.addEventListener('pointermove',move);
-        drag.addEventListener('pointerup',end); resize.addEventListener('pointerup',end);
-        drag.addEventListener('pointercancel',end); resize.addEventListener('pointercancel',end);
+        resizeX.addEventListener('pointerdown',ev=>begin(ev,'resize-x'));
+        drag.addEventListener('pointermove',move); resize.addEventListener('pointermove',move); resizeX.addEventListener('pointermove',move);
+        drag.addEventListener('pointerup',end); resize.addEventListener('pointerup',end); resizeX.addEventListener('pointerup',end);
+        drag.addEventListener('pointercancel',end); resize.addEventListener('pointercancel',end); resizeX.addEventListener('pointercancel',end);
 
         edit.addEventListener('pointerdown',ev=>{ev.preventDefault();ev.stopPropagation();});
         edit.addEventListener('click',ev=>{ev.preventDefault();ev.stopPropagation();openWidgetEditor(card);});
@@ -1172,6 +1213,10 @@
         card.querySelector('.search-engine-change').addEventListener('click',ev=>{
           ev.preventDefault();ev.stopPropagation();
           const picker=document.createElement('div'); picker.className='engine-picker';
+          const cancel=document.createElement('button');
+          cancel.type='button'; cancel.className='engine-picker-cancel'; cancel.textContent='× Cancel';
+          cancel.onclick=x=>{x.preventDefault();x.stopPropagation();picker.remove();};
+          picker.appendChild(cancel);
           Object.entries(window._searchEngines||{}).forEach(([key,e])=>{
             const b=document.createElement('button'); b.type='button'; b.textContent=e.name;
             b.onclick=x=>{x.preventDefault();x.stopPropagation();
@@ -1720,6 +1765,12 @@
         let picker=card.querySelector('.engine-picker');
         if(picker){picker.classList.toggle('show');return;}
         picker=document.createElement('div');picker.className='engine-picker';
+        const cancel=document.createElement('button');
+        cancel.type='button';
+        cancel.className='engine-picker-cancel';
+        cancel.textContent='× Cancel';
+        cancel.onclick=(ev)=>{ev.preventDefault();ev.stopPropagation();picker.classList.remove('show');};
+        picker.appendChild(cancel);
         Object.entries(engines).forEach(([key,e])=>{
           const b=document.createElement('button');b.type='button';b.textContent=e.name;
           b.onclick=(ev)=>{ev.preventDefault();ev.stopPropagation();applyEngine(cardType,key);picker.classList.remove('show');};
@@ -1866,6 +1917,7 @@ document.querySelectorAll('input[type="search"]').forEach(input => {
         card.style.setProperty('--widget-y',(item.y||0)+'px');
         if(Number.isFinite(item.width))card.style.setProperty('--widget-width',item.width+'px');
         if(Number.isFinite(item.height))card.style.setProperty('--widget-height',item.height+'px');
+        positions[item.id]={...(positions[item.id]||{}),w:item.width,h:item.height,x:item.x,y:item.y};
       });
       if(preset.searchEngines) localStorage.setItem('searchCardEngines',JSON.stringify(preset.searchEngines));
     }
