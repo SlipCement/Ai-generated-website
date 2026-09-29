@@ -1856,6 +1856,7 @@
 
       cardTypes.forEach(type=>applyEngine(type,saved[type]||type));
       window._searchEngines=engines;
+      window._applySearchEngine=(type,engine)=>applyEngine(type,engine);
     })();
 
     function openEngine(type) {
@@ -1964,81 +1965,36 @@ document.querySelectorAll('input[type="search"]').forEach(input => {
     }, 50);
   });
 });
-    function getWidgetPreset(){
-      return {
-        widgets:[...document.querySelectorAll('.tools .card.widget-ready')].map(card=>({
-          id:card.dataset.widgetId||'',
-          x:parseFloat(card.style.getPropertyValue('--widget-x'))||0,
-          y:parseFloat(card.style.getPropertyValue('--widget-y'))||0,
-          width:parseFloat(card.style.getPropertyValue('--widget-width'))||card.offsetWidth,
-          height:parseFloat(card.style.getPropertyValue('--widget-height'))||card.offsetHeight
-        })),
-        searchEngines:JSON.parse(localStorage.getItem('searchCardEngines')||'{}')
-      };
+    function serializeWidget(card){
+      const id=card.dataset.widgetId||'';
+      const data=window._widgetData?.[id] || {};
+      const out={id,type:data.type||card.dataset.widgetType||'custom',title:data.title??card.querySelector('h2')?.textContent??'',text:data.text??'',color:card.dataset.widgetColor||data.color||'',x:parseFloat(card.style.getPropertyValue('--widget-x'))||0,y:parseFloat(card.style.getPropertyValue('--widget-y'))||0,width:parseFloat(card.style.getPropertyValue('--widget-width'))||card.offsetWidth,height:parseFloat(card.style.getPropertyValue('--widget-height'))||card.offsetHeight};
+      const ta=card.querySelector('textarea'); if(ta) out.content=ta.value; else if(data.content!==undefined) out.content=data.content;
+      return out;
     }
+    function getWidgetPreset(){return {version:2,widgets:[...document.querySelectorAll('#widget-canvas .card.widget-ready')].map(serializeWidget),searchEngines:JSON.parse(localStorage.getItem('searchCardEngines')||'{}'),notes:localStorage.getItem('jasperSearchNotes')||''};}
     function applyWidgetPreset(preset){
       if(!preset||!Array.isArray(preset.widgets))return;
-      const cards=[...document.querySelectorAll('#widget-canvas .card.widget-ready')];
-      preset.widgets.forEach(item=>{
-        const card=cards.find(x=>x.dataset.widgetId===item.id);
-        if(!card)return;
-        card.style.setProperty('--widget-x',(item.x||0)+'px');
-        card.style.setProperty('--widget-y',(item.y||0)+'px');
-        if(Number.isFinite(item.width))card.style.setProperty('--widget-width',item.width+'px');
-        if(Number.isFinite(item.height))card.style.setProperty('--widget-height',item.height+'px');
-        positions[item.id]={...(positions[item.id]||{}),w:item.width,h:item.height,x:item.x,y:item.y};
+      preset.widgets.forEach(item=>{const card=[...document.querySelectorAll('#widget-canvas .card.widget-ready')].find(x=>x.dataset.widgetId===item.id);if(!card)return;
+        card.style.setProperty('--widget-x',(Number(item.x)||0)+'px');card.style.setProperty('--widget-y',(Number(item.y)||0)+'px');
+        if(Number.isFinite(Number(item.width)))card.style.setProperty('--widget-width',Number(item.width)+'px');if(Number.isFinite(Number(item.height)))card.style.setProperty('--widget-height',Number(item.height)+'px');
+        if(item.color){card.dataset.widgetColor=item.color;card.style.background='';card.style.border='2px solid '+item.color;}
+        const ta=card.querySelector('textarea');if(ta&&item.content!==undefined)ta.value=item.content;
+        const title=card.querySelector('h2');if(title&&item.title)title.textContent=item.title;
+        const id=card.dataset.widgetId;if(window._widgetData?.[id])Object.assign(window._widgetData[id],{title:item.title,text:item.text,content:item.content,color:item.color});
       });
-      if(preset.searchEngines) localStorage.setItem('searchCardEngines',JSON.stringify(preset.searchEngines));
+      if(preset.notes!==undefined){localStorage.setItem('jasperSearchNotes',preset.notes);const n=document.getElementById('notesBox');if(n)n.value=preset.notes;}
+      if(preset.searchEngines){localStorage.setItem('searchCardEngines',JSON.stringify(preset.searchEngines));Object.entries(preset.searchEngines).forEach(([type,engine])=>window._applySearchEngine?.(type,engine));}
+      updateCanvasHeight();
     }
     function openPresets(){
-      const presets=JSON.parse(localStorage.getItem('aiGeneratedWidgetPresets')||'{}');
-      const overlay=document.createElement('div');overlay.id='preset-picker';
-      const panel=document.createElement('div');panel.id='preset-picker-panel';
-      panel.innerHTML='<h2>Widget Presets</h2><p style="opacity:.7">Save and load widget positions, sizes, and search-engine choices.</p>';
-      const list=document.createElement('div');
-      Object.keys(presets).forEach(name=>{
-        const row=document.createElement('div');row.className='preset-row';
-        const load=document.createElement('button');load.className='preset-load';load.textContent=name;
-        load.onclick=()=>{applyWidgetPreset(presets[name]);overlay.remove();};
-        const del=document.createElement('button');del.className='preset-delete';del.textContent='×';del.title='Delete preset';
-        del.onclick=()=>{delete presets[name];localStorage.setItem('aiGeneratedWidgetPresets',JSON.stringify(presets));overlay.remove();openPresets();};
-        row.append(load,del);list.append(row);
-      });
-      const name=document.createElement('input');name.placeholder='Preset name...';
-      const save=document.createElement('button');save.textContent='Save Current Layout';
-      save.onclick=()=>{const n=name.value.trim()||'Preset '+(Object.keys(presets).length+1);presets[n]=getWidgetPreset();localStorage.setItem('aiGeneratedWidgetPresets',JSON.stringify(presets));overlay.remove();};
-      const transferTitle=document.createElement('strong');
-      transferTitle.textContent='Transfer between devices';
-      transferTitle.style.marginTop='8px';
-      const transferHelp=document.createElement('div');
-      transferHelp.textContent='Export your presets to a JSON file, then import that file on another device.';
-      transferHelp.style.cssText='font-size:12px;opacity:.7;line-height:1.4;';
-      const exportButton=document.createElement('button');
-      exportButton.textContent='Export Presets';
-      exportButton.onclick=()=>{
-        const payload={version:1,presets:JSON.parse(localStorage.getItem('aiGeneratedWidgetPresets')||'{}'),generatedAt:new Date().toISOString()};
-        const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
-        const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='ai-generated-website-presets.json'; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),1000);
-      };
-      const importButton=document.createElement('button'); importButton.textContent='Import Presets';
-      const fileInput=document.createElement('input'); fileInput.type='file'; fileInput.accept='.json,application/json'; fileInput.style.display='none';
-      fileInput.onchange=async()=>{
-        const file=fileInput.files?.[0]; if(!file)return;
-        try{
-          const data=JSON.parse(await file.text());
-          const incoming=data.presets && typeof data.presets==='object' ? data.presets : data;
-          const current=JSON.parse(localStorage.getItem('aiGeneratedWidgetPresets')||'{}');
-          Object.assign(current,incoming);
-          localStorage.setItem('aiGeneratedWidgetPresets',JSON.stringify(current));
-          alert('Presets imported! Reopen Presets to see them.');
-          overlay.remove();
-        }catch{ alert('That file is not a valid preset file.'); }
-        fileInput.value='';
-      };
-      importButton.onclick=()=>fileInput.click();
-      const close=document.createElement('button');close.textContent='Close';close.onclick=()=>overlay.remove();
-      panel.append(list,name,save,transferTitle,transferHelp,exportButton,importButton,fileInput,close);overlay.append(panel);document.body.append(overlay);
-    }
+      const presets=JSON.parse(localStorage.getItem('aiGeneratedWidgetPresets')||'{}');const overlay=document.createElement('div');overlay.id='preset-picker';const panel=document.createElement('div');panel.id='preset-picker-panel';
+      panel.innerHTML='<h2>Widget Presets</h2><p style="opacity:.7">Save and load widget positions, sizes, content, colors, and search engines.</p>';const list=document.createElement('div');
+      const render=()=>{list.innerHTML='';const names=Object.keys(presets);if(!names.length){list.innerHTML='<p style="opacity:.65">No presets saved yet.</p>';return;}names.forEach(name=>{const row=document.createElement('div');row.className='preset-row';const load=document.createElement('button');load.className='preset-load';load.textContent=name;load.onclick=()=>{applyWidgetPreset(presets[name]);overlay.remove();};const del=document.createElement('button');del.className='preset-delete';del.textContent='×';del.onclick=()=>{delete presets[name];localStorage.setItem('aiGeneratedWidgetPresets',JSON.stringify(presets));render();};row.append(load,del);list.append(row);});};
+      const name=document.createElement('input');name.placeholder='Preset name...';const save=document.createElement('button');save.textContent='Save Current Layout';save.onclick=()=>{const n=name.value.trim()||'Preset '+(Object.keys(presets).length+1);presets[n]=getWidgetPreset();localStorage.setItem('aiGeneratedWidgetPresets',JSON.stringify(presets));name.value='';render();};
+      const title=document.createElement('strong');title.textContent='Transfer between devices';const help=document.createElement('div');help.textContent='Export presets to a JSON file, then import it on another device.';help.style.cssText='font-size:12px;opacity:.7';
+      const exp=document.createElement('button');exp.textContent='Export Presets';exp.onclick=()=>{const blob=new Blob([JSON.stringify({version:2,presets},null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='ai-generated-website-presets.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);};
+      const imp=document.createElement('button');imp.textContent='Import Presets';const file=document.createElement('input');file.type='file';file.accept='.json,application/json';file.style.display='none';file.onchange=async()=>{try{const d=JSON.parse(await file.files[0].text());Object.assign(presets,d.presets||d);localStorage.setItem('aiGeneratedWidgetPresets',JSON.stringify(presets));render();alert('Presets imported!');}catch{alert('That file is not a valid preset file.')}};imp.onclick=()=>file.click();const close=document.createElement('button');close.textContent='Close';close.onclick=()=>overlay.remove();panel.append(list,name,save,title,help,exp,imp,file,close);overlay.append(panel);document.body.append(overlay);render();}
     document.getElementById('widget-presets-button')?.addEventListener('click',openPresets);
 
   </script>
