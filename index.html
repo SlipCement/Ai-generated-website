@@ -973,7 +973,7 @@
         if(data.color){
           card.dataset.widgetColor=data.color;
           card.style.background='';
-          card.style.border='2px solid '+data.color;
+          card.style.border='1px solid '+data.color;
           card.style.setProperty('--widget-outline-color',data.color);
         }
         // innerHTML replaces the content, so explicitly restore the dimensions
@@ -1978,7 +1978,7 @@ document.querySelectorAll('input[type="search"]').forEach(input => {
       preset.widgets.forEach(item=>{const card=[...document.querySelectorAll('#widget-canvas .card.widget-ready')].find(x=>x.dataset.widgetId===item.id);if(!card)return;
         card.style.setProperty('--widget-x',(Number(item.x)||0)+'px');card.style.setProperty('--widget-y',(Number(item.y)||0)+'px');
         if(Number.isFinite(Number(item.width)))card.style.setProperty('--widget-width',Number(item.width)+'px');if(Number.isFinite(Number(item.height)))card.style.setProperty('--widget-height',Number(item.height)+'px');
-        if(item.color){card.dataset.widgetColor=item.color;card.style.background='';card.style.border='2px solid '+item.color;}
+        if(item.color){card.dataset.widgetColor=item.color;card.style.background='';card.style.border='1px solid '+item.color;}
         const ta=card.querySelector('textarea');if(ta&&item.content!==undefined)ta.value=item.content;
         const title=card.querySelector('h2');if(title&&item.title)title.textContent=item.title;
         const id=card.dataset.widgetId;if(window._widgetData?.[id])Object.assign(window._widgetData[id],{title:item.title,text:item.text,content:item.content,color:item.color});
