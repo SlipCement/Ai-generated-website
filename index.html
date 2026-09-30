@@ -941,6 +941,8 @@
       function renderEditableWidget(card,data){
         const savedHeight=card.style.getPropertyValue('--widget-height');
         const savedWidth=card.style.getPropertyValue('--widget-width');
+        const widgetControls=[...card.querySelectorAll('.widget-drag-handle,.widget-edit-button,.widget-duplicate-button,.widget-remove-button,.widget-resize-handle,.widget-resize-x-handle')];
+        widgetControls.forEach(control=>control.remove());
         const type=data.type||'text';
         const title=escapeWidgetText(data.title||'Widget');
         const text=escapeWidgetText(data.text||'');
@@ -953,7 +955,14 @@
           go.addEventListener('click',ev=>{ev.preventDefault();ev.stopPropagation();const q=input.value.trim();const e=(window._searchEngines||{})[card.dataset.currentEngine||'google'];if(q&&e)window.location.href=e.search+encodeURIComponent(q);});
           input.addEventListener('keypress',ev=>{if(ev.key==='Enter')go.click();});
         } else if(type==='clock'){
-          card.innerHTML='<h2>'+title+'</h2><div class="clock">00:00:00</div>';
+          card.innerHTML='<h2>'+title+'</h2><div class="clock" data-live-clock>00:00:00</div>';
+          const updateLiveClock=()=>{
+            const el=card.querySelector('[data-live-clock]');
+            if(el) el.textContent=new Date().toLocaleTimeString();
+          };
+          updateLiveClock();
+          clearInterval(card._liveClockTimer);
+          card._liveClockTimer=setInterval(updateLiveClock,1000);
         } else if(type==='notes'){
           card.classList.add('widget-notes');
           card.innerHTML='<h2>'+title+'</h2><textarea class="widget-editor-text" placeholder="Write something...">'+text+'</textarea><button class="notes-done" type="button">Done</button>';
@@ -981,6 +990,7 @@
         if(savedHeight) card.style.setProperty('--widget-height',savedHeight);
         if(savedWidth) card.style.setProperty('--widget-width',savedWidth);
         card.style.overflow='auto';
+        widgetControls.forEach(control=>card.appendChild(control));
       }
 
       function applySavedWidgetData(card){
@@ -1048,6 +1058,7 @@
         positions[newId]={left:Number.isFinite(base.left)?base.left:20,top:Number.isFinite(base.top)?base.top:20,x:(base.x||0)+40,y:(base.y||0)+40,w:card.offsetWidth,h:card.offsetHeight};
         if(widgetData[oldId]) widgetData[newId]={...widgetData[oldId]};
         else widgetData[newId]=inferWidgetData(card);
+        if(widgetData[newId]) widgetData[newId].custom=widgetData[oldId]?.custom || card.dataset.customWidget==='true';
         saveWidgetData();
         setupWidget(clone,canvas.querySelectorAll('.card').length-1);
         clone.style.setProperty('--widget-left',(positions[newId].left)+'px');
@@ -1170,6 +1181,35 @@
         });
       }
 
+      function restorePersistentCustomWidgets(){
+        Object.entries(widgetData).forEach(([id,data])=>{
+          if(!data?.custom || document.querySelector('.card[data-widget-id="'+CSS.escape(id)+'"]')) return;
+          const card=document.createElement('div');
+          card.className='card';
+          card.dataset.widgetId=id;
+          card.dataset.customWidget='true';
+          const safeTitle=escapeHtml(data.title||'');
+          const type=data.type||'text';
+          if(type==='text'){
+            card.innerHTML='<h2>'+safeTitle+'</h2><div class="custom-widget-text">'+escapeHtml(data.text||'').replace(/\n/g,'<br>')+'</div>';
+          }else if(type==='button' || type==='link'){
+            card.innerHTML='<h2>'+safeTitle+'</h2><button type="button" class="custom-widget-button">'+escapeHtml(data.buttonText||'Open')+'</button>';
+            card.querySelector('button').onclick=ev=>{ev.preventDefault();ev.stopPropagation();if(data.url)window.location.href=data.url;};
+          }else if(type==='iframe'){
+            card.innerHTML='<h2>'+safeTitle+'</h2><iframe title="'+safeTitle+'" src="'+escapeHtml(data.url||'')+'" style="width:100%;height:220px;border:0;border-radius:12px;background:rgba(0,0,0,.15);" loading="lazy"></iframe>';
+          }else if(type==='api'){
+            card.innerHTML='<h2>'+safeTitle+'</h2><div class="custom-api-output">Loading API…</div>';
+            const output=card.querySelector('.custom-api-output');
+            const headers={}; if(data.apiKey) headers.Authorization='Bearer '+data.apiKey;
+            fetch(data.url||'',{headers}).then(res=>res.text()).then(body=>{
+              try{output.textContent=JSON.stringify(JSON.parse(body),null,2);}catch{output.textContent=body;}
+            }).catch(err=>{output.textContent='API request failed: '+err.message+' (The API may block browser/CORS requests.)';});
+          }
+          canvas.appendChild(card);
+        });
+      }
+
+      restorePersistentCustomWidgets();
       canvas.querySelectorAll('.card').forEach((card,i)=>setupWidget(card,i));
       updateCanvasHeight();
 
@@ -1179,7 +1219,7 @@
         '<button type="button" class="widget-edit-control" id="widget-add-button">Add Widget</button>' +
         '<button type="button" class="widget-edit-control" id="widget-restore-search">Restore Search</button>' +
         '<button type="button" class="widget-edit-control" id="widget-reset-button">Reset Widgets</button>' +
-        '<button type="button" class="widget-edit-control" id="widget-presets-button">Presets</button><button type="button" class="widget-edit-control" id="widget-gradient-button">Change Gradient</button>' +
+        '<button type="button" class="widget-edit-control" id="widget-presets-button">Presets</button><button type="button" class="widget-edit-control" id="widget-save-preset-button">Save Preset</button><button type="button" class="widget-edit-control" id="widget-gradient-button">Change Gradient</button>' +
         '<button type="button" id="widget-snap-toggle">🧲 Snap: ON</button>';
       document.body.appendChild(toolbar);
 
@@ -1190,6 +1230,17 @@
         localStorage.setItem(EDITING_KEY,on?'1':'0');
         if(!on) dirty=false;
       }
+      document.getElementById('widget-save-preset-button').addEventListener('click',ev=>{
+        ev.preventDefault();ev.stopPropagation();
+        const name=prompt('Preset name:', 'Preset '+(Object.keys(JSON.parse(localStorage.getItem('aiGeneratedWidgetPresets')||'{}')).length+1));
+        if(name===null)return;
+        const clean=name.trim()||'Preset '+(Date.now());
+        const presets=JSON.parse(localStorage.getItem('aiGeneratedWidgetPresets')||'{}');
+        presets[clean]=getWidgetPreset();
+        localStorage.setItem('aiGeneratedWidgetPresets',JSON.stringify(presets));
+        alert('Preset saved: '+clean);
+      });
+
       editButton.addEventListener('click',ev=>{
         ev.preventDefault();ev.stopPropagation();
         setEditing(!document.body.classList.contains('widget-editing'));
@@ -1243,6 +1294,16 @@
         const run=()=>{const q=input.value.trim();const selected=input.dataset.engine||'google';const e=(window._searchEngines||{})[selected];if(q&&e) window.location.href=e.search+encodeURIComponent(q);};
         button.addEventListener('click',ev=>{ev.preventDefault();ev.stopPropagation();run();});
         input.addEventListener('keypress',ev=>{if(ev.key==='Enter')run();});
+        widgetData[id]={
+          type,
+          title,
+          text:textContent,
+          url,
+          buttonText,
+          apiKey,
+          custom:true
+        };
+        saveWidgetData();
         canvas.appendChild(card);
         setupWidget(card,canvas.querySelectorAll('.card').length-1);
         card.querySelector('.search-engine-change').addEventListener('click',ev=>{
@@ -1972,28 +2033,61 @@ document.querySelectorAll('input[type="search"]').forEach(input => {
       const ta=card.querySelector('textarea'); if(ta) out.content=ta.value; else if(data.content!==undefined) out.content=data.content;
       return out;
     }
-    function getWidgetPreset(){return {version:2,widgets:[...document.querySelectorAll('#widget-canvas .card.widget-ready')].map(serializeWidget),searchEngines:JSON.parse(localStorage.getItem('searchCardEngines')||'{}'),notes:localStorage.getItem('jasperSearchNotes')||''};}
+    function getWidgetPreset(){return {version:3,widgets:[...document.querySelectorAll('#widget-canvas .card.widget-ready')].map(serializeWidget),widgetData:JSON.parse(JSON.stringify(window._widgetData||{})),searchEngines:JSON.parse(localStorage.getItem('searchCardEngines')||'{}'),notes:localStorage.getItem('jasperSearchNotes')||''};}
     function applyWidgetPreset(preset){
-      if(!preset||!Array.isArray(preset.widgets))return;
-      preset.widgets.forEach(item=>{const card=[...document.querySelectorAll('#widget-canvas .card.widget-ready')].find(x=>x.dataset.widgetId===item.id);if(!card)return;
-        card.style.setProperty('--widget-x',(Number(item.x)||0)+'px');card.style.setProperty('--widget-y',(Number(item.y)||0)+'px');
-        if(Number.isFinite(Number(item.width)))card.style.setProperty('--widget-width',Number(item.width)+'px');if(Number.isFinite(Number(item.height)))card.style.setProperty('--widget-height',Number(item.height)+'px');
+      if(!preset||!Array.isArray(preset.widgets)) return;
+      if(preset.widgetData && typeof preset.widgetData==='object'){
+        Object.assign(widgetData,preset.widgetData);
+        saveWidgetData();
+      }
+      const customItems=preset.widgets.filter(item=>widgetData[item.id]?.custom);
+      customItems.forEach(item=>{
+        if(document.querySelector('#widget-canvas .card.widget-ready[data-widget-id="'+CSS.escape(item.id)+'"]')) return;
+        const data=widgetData[item.id];
+        const card=document.createElement('div');
+        card.className='card';
+        card.dataset.widgetId=item.id;
+        card.dataset.customWidget='true';
+        const safeTitle=escapeHtml(data.title||item.title||'');
+        const type=data.type||item.type||'text';
+        if(type==='text'){
+          card.innerHTML='<h2>'+safeTitle+'</h2><div class="custom-widget-text">'+escapeHtml(data.text||item.text||'').replace(/\n/g,'<br>')+'</div>';
+        }else if(type==='button' || type==='link'){
+          card.innerHTML='<h2>'+safeTitle+'</h2><button type="button" class="custom-widget-button">'+escapeHtml(data.buttonText||'Open')+'</button>';
+          card.querySelector('button').onclick=ev=>{ev.preventDefault();ev.stopPropagation();if(data.url)window.location.href=data.url;};
+        }else if(type==='iframe'){
+          card.innerHTML='<h2>'+safeTitle+'</h2><iframe title="'+safeTitle+'" src="'+escapeHtml(data.url||'')+'" style="width:100%;height:220px;border:0;border-radius:12px;background:rgba(0,0,0,.15);" loading="lazy"></iframe>';
+        }else if(type==='api'){
+          card.innerHTML='<h2>'+safeTitle+'</h2><div class="custom-api-output">Loading API…</div>';
+          const output=card.querySelector('.custom-api-output');const headers={};if(data.apiKey)headers.Authorization='Bearer '+data.apiKey;
+          fetch(data.url||'',{headers}).then(res=>res.text()).then(body=>{try{output.textContent=JSON.stringify(JSON.parse(body),null,2);}catch{output.textContent=body;}}).catch(err=>output.textContent='API request failed: '+err.message);
+        }
+        canvas.appendChild(card);
+        setupWidget(card,canvas.querySelectorAll('.card').length-1);
+      });
+      preset.widgets.forEach(item=>{
+        const card=[...document.querySelectorAll('#widget-canvas .card.widget-ready')].find(x=>x.dataset.widgetId===item.id);
+        if(!card)return;
+        card.style.setProperty('--widget-x',(Number(item.x)||0)+'px');
+        card.style.setProperty('--widget-y',(Number(item.y)||0)+'px');
+        if(Number.isFinite(Number(item.width)))card.style.setProperty('--widget-width',Number(item.width)+'px');
+        if(Number.isFinite(Number(item.height)))card.style.setProperty('--widget-height',Number(item.height)+'px');
         if(item.color){card.dataset.widgetColor=item.color;card.style.background='';card.style.border='1px solid '+item.color;}
         const ta=card.querySelector('textarea');if(ta&&item.content!==undefined)ta.value=item.content;
         const title=card.querySelector('h2');if(title&&item.title)title.textContent=item.title;
-        const id=card.dataset.widgetId;if(window._widgetData?.[id])Object.assign(window._widgetData[id],{title:item.title,text:item.text,content:item.content,color:item.color});
+        if(widgetData[item.id])Object.assign(widgetData[item.id],{title:item.title,text:item.text,content:item.content,color:item.color});
       });
-      if(preset.notes!==undefined){localStorage.setItem('jasperSearchNotes',preset.notes);const n=document.getElementById('notesBox');if(n)n.value=preset.notes;}
-      if(preset.searchEngines){localStorage.setItem('searchCardEngines',JSON.stringify(preset.searchEngines));Object.entries(preset.searchEngines).forEach(([type,engine])=>window._applySearchEngine?.(type,engine));}
+      saveWidgetData();
       updateCanvasHeight();
     }
+
     function openPresets(){
       const presets=JSON.parse(localStorage.getItem('aiGeneratedWidgetPresets')||'{}');const overlay=document.createElement('div');overlay.id='preset-picker';const panel=document.createElement('div');panel.id='preset-picker-panel';
       panel.innerHTML='<h2>Widget Presets</h2><p style="opacity:.7">Save and load widget positions, sizes, content, colors, and search engines.</p>';const list=document.createElement('div');
       const render=()=>{list.innerHTML='';const names=Object.keys(presets);if(!names.length){list.innerHTML='<p style="opacity:.65">No presets saved yet.</p>';return;}names.forEach(name=>{const row=document.createElement('div');row.className='preset-row';const load=document.createElement('button');load.className='preset-load';load.textContent=name;load.onclick=()=>{applyWidgetPreset(presets[name]);overlay.remove();};const del=document.createElement('button');del.className='preset-delete';del.textContent='×';del.onclick=()=>{delete presets[name];localStorage.setItem('aiGeneratedWidgetPresets',JSON.stringify(presets));render();};row.append(load,del);list.append(row);});};
       const name=document.createElement('input');name.placeholder='Preset name...';const save=document.createElement('button');save.textContent='Save Current Layout';save.onclick=()=>{const n=name.value.trim()||'Preset '+(Object.keys(presets).length+1);presets[n]=getWidgetPreset();localStorage.setItem('aiGeneratedWidgetPresets',JSON.stringify(presets));name.value='';render();};
       const title=document.createElement('strong');title.textContent='Transfer between devices';const help=document.createElement('div');help.textContent='Export presets to a JSON file, then import it on another device.';help.style.cssText='font-size:12px;opacity:.7';
-      const exp=document.createElement('button');exp.textContent='Export Presets';exp.onclick=()=>{const blob=new Blob([JSON.stringify({version:2,presets},null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='ai-generated-website-presets.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);};
+      const exp=document.createElement('button');exp.textContent='Export Presets';exp.onclick=()=>{const blob=new Blob([JSON.stringify({version:3,presets},null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='ai-generated-website-presets.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);};
       const imp=document.createElement('button');imp.textContent='Import Presets';const file=document.createElement('input');file.type='file';file.accept='.json,application/json';file.style.display='none';file.onchange=async()=>{try{const d=JSON.parse(await file.files[0].text());Object.assign(presets,d.presets||d);localStorage.setItem('aiGeneratedWidgetPresets',JSON.stringify(presets));render();alert('Presets imported!');}catch{alert('That file is not a valid preset file.')}};imp.onclick=()=>file.click();const close=document.createElement('button');close.textContent='Close';close.onclick=()=>overlay.remove();panel.append(list,name,save,title,help,exp,imp,file,close);overlay.append(panel);document.body.append(overlay);render();}
     document.getElementById('widget-presets-button')?.addEventListener('click',openPresets);
 
