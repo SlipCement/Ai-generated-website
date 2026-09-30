@@ -972,9 +972,26 @@
           card.classList.remove('widget-notes');
           card.innerHTML='<h2 style="font-size:2rem;margin-bottom:20px;">'+title+'</h2><button type="button" style="width:100%;background:#24292f;font-size:1.2rem;padding:20px;color:white;">'+text+'</button>';
           card.querySelector('button').addEventListener('click',ev=>{ev.preventDefault();ev.stopPropagation();window.location.href='https://github.com';});
-        } else if(type==='button'){
+        } else if(type==='button' || type==='link'){
           card.classList.remove('widget-notes');
           card.innerHTML='<h2>'+title+'</h2><button type="button" class="custom-widget-button">'+text+'</button>';
+          const customButton=card.querySelector('.custom-widget-button');
+          const savedUrl=data.url||'';
+          customButton.addEventListener('click',ev=>{
+            ev.preventDefault();ev.stopPropagation();
+            if(savedUrl) window.location.href=savedUrl;
+          });
+        } else if(type==='iframe'){
+          card.classList.remove('widget-notes');
+          card.innerHTML='<h2>'+title+'</h2><iframe title="'+title+'" src="'+escapeWidgetText(data.url||'')+'" style="width:100%;height:220px;border:0;border-radius:12px;background:rgba(0,0,0,.15);" loading="lazy"></iframe>';
+        } else if(type==='api'){
+          card.classList.remove('widget-notes');
+          card.innerHTML='<h2>'+title+'</h2><div class="custom-api-output">Loading API…</div>';
+          const output=card.querySelector('.custom-api-output');
+          const headers={}; if(data.apiKey) headers.Authorization='Bearer '+data.apiKey;
+          fetch(data.url||'',{headers}).then(res=>res.text()).then(body=>{
+            try{output.textContent=JSON.stringify(JSON.parse(body),null,2);}catch{output.textContent=body;}
+          }).catch(err=>{output.textContent='API request failed: '+err.message+' (The API may block browser/CORS requests.)';});
         } else {
           card.classList.remove('widget-notes');
           card.innerHTML='<h2>'+title+'</h2><div class="custom-widget-text" style="white-space:pre-wrap;line-height:1.45;">'+text+'</div>';
@@ -1035,10 +1052,11 @@
             text:panel.querySelector('#widgetEditText').value,
             color:panel.querySelector('#widgetEditColor').value
           };
-          widgetData[card.dataset.widgetId]=data;
+          widgetData[card.dataset.widgetId]={...(widgetData[card.dataset.widgetId]||{}),...data,custom:widgetData[card.dataset.widgetId]?.custom || card.dataset.customWidget==='true'};
           saveWidgetData();
           renderEditableWidget(card,data);
           card.dataset.widgetColor=data.color;
+          if(widgetData[card.dataset.widgetId]?.custom) card.dataset.customWidget='true';
           save(); updateCanvasHeight();
           close();
         };
