@@ -1001,6 +1001,8 @@
           card.style.background='';
           card.style.border='1px solid '+data.color;
           card.style.setProperty('--widget-outline-color',data.color);
+          const heading=card.querySelector('h2');
+          if(heading) heading.style.color=data.color;
         }
         // innerHTML replaces the content, so explicitly restore the dimensions
         // and overflow state after editing.
@@ -1224,6 +1226,13 @@
             }).catch(err=>{output.textContent='API request failed: '+err.message+' (The API may block browser/CORS requests.)';});
           }
           canvas.appendChild(card);
+          const spot=findOpenWidgetSpot(400,180,card);
+          const saved=positions[id]||{};
+          if(!Number.isFinite(saved.left)) saved.left=spot.left;
+          if(!Number.isFinite(saved.top)) saved.top=spot.top;
+          positions[id]=saved;
+          card.style.setProperty('--widget-left',saved.left+'px');
+          card.style.setProperty('--widget-top',saved.top+'px');
         });
       }
 
@@ -1299,62 +1308,66 @@
         restoreSearchWidget();
       });
 
+      function findOpenWidgetSpot(width=400,height=160,ignoreCard=null){
+        const gap=20, startX=20, startY=20;
+        const maxCols=Math.max(1,Math.floor((Math.min(canvas.clientWidth||1200,1200)-startX+gap)/(width+gap)));
+        for(let row=0;row<30;row++){
+          for(let col=0;col<maxCols;col++){
+            const x=startX+col*(width+gap), y=startY+row*(height+gap);
+            let blocked=false;
+            for(const other of canvas.querySelectorAll('.card.widget-ready')){
+              if(other===ignoreCard)continue;
+              const ox=(parseFloat(other.style.getPropertyValue('--widget-left'))||0)+(parseFloat(other.style.getPropertyValue('--widget-x'))||0);
+              const oy=(parseFloat(other.style.getPropertyValue('--widget-top'))||0)+(parseFloat(other.style.getPropertyValue('--widget-y'))||0);
+              const ow=other.offsetWidth||400, oh=other.offsetHeight||160;
+              if(x < ox+ow+gap && x+width+gap > ox && y < oy+oh+gap && y+height+gap > oy){blocked=true;break;}
+            }
+            if(!blocked)return {left:x,top:y};
+          }
+        }
+        return {left:20,top:20};
+      }
+
       function restoreSearchWidget() {
-        const type='google';
+        const type='search';
         const id='restored-search-'+Date.now()+'-'+Math.random().toString(36).slice(2,6);
+        const engine=(window._searchEngines||{}).google;
         const card=document.createElement('div');
         card.className='card';
         card.dataset.widgetId=id;
         card.dataset.restoredSearch='true';
-        card.innerHTML='<h2><span class="engine-title">Google Search</span><button type="button" class="search-engine-change" data-engine-card="'+id+'">Change</button></h2><div class="search-box-wrapper"><div class="search-box"><input type="search" placeholder="Search Google..." autocomplete="off"><button type="button">Search</button></div><div class="suggestions-dropdown"></div></div>';
+        card.dataset.currentEngine='google';
+        card.innerHTML='<h2><span class="engine-title">'+escapeWidgetText(engine?.title||'Google Search')+'</span><button type="button" class="search-engine-change" data-engine-card="'+id+'">Change</button></h2><div class="search-box-wrapper"><div class="search-box"><input type="search" placeholder="'+escapeWidgetText(engine?.placeholder||'Search Google...')+'" autocomplete="off"><button type="button">Search</button></div><div class="suggestions-dropdown"></div></div>';
         const input=card.querySelector('input');
-        const button=card.querySelector('button');
-        const run=()=>{const q=input.value.trim();const selected=input.dataset.engine||'google';const e=(window._searchEngines||{})[selected];if(q&&e) window.location.href=e.search+encodeURIComponent(q);};
+        const button=card.querySelector('.search-box button');
+        const run=()=>{const q=input.value.trim();const selected=card.dataset.currentEngine||'google';const e=(window._searchEngines||{})[selected];if(q&&e)window.location.href=e.search+encodeURIComponent(q);};
+        input.dataset.engine='google';
         button.addEventListener('click',ev=>{ev.preventDefault();ev.stopPropagation();run();});
         input.addEventListener('keypress',ev=>{if(ev.key==='Enter')run();});
-        widgetData[id]={
-          type,
-          title,
-          text:textContent,
-          url,
-          buttonText,
-          apiKey,
-          custom:true
-        };
+        const initialEngine=engine;
+        if(initialEngine){card.style.border='1px solid '+(initialEngine.border||initialEngine.color||'currentColor');card.style.background=initialEngine.bg||'';card.querySelector('.engine-title').style.color=initialEngine.color||'';}
+        widgetData[id]={type,title:initialEngine?.title||'Google Search',text:initialEngine?.title||'Google Search',color:initialEngine?.border||initialEngine?.color||''};
         saveWidgetData();
         canvas.appendChild(card);
         setupWidget(card,canvas.querySelectorAll('.card').length-1);
+        const spot=findOpenWidgetSpot(400,150,card);
+        positions[id]={left:spot.left,top:spot.top,x:0,y:0,w:400,h:150};
+        card.style.setProperty('--widget-left',spot.left+'px');
+        card.style.setProperty('--widget-top',spot.top+'px');
+        card.style.setProperty('--widget-width','400px');
+        card.style.setProperty('--widget-height','150px');
         card.querySelector('.search-engine-change').addEventListener('click',ev=>{
           ev.preventDefault();ev.stopPropagation();
-          const picker=document.createElement('div'); picker.className='engine-picker';
-          const cancel=document.createElement('button');
-          cancel.type='button'; cancel.className='engine-picker-cancel'; cancel.textContent='× Cancel';
-          cancel.onclick=x=>{x.preventDefault();x.stopPropagation();picker.remove();};
-          picker.appendChild(cancel);
+          const picker=document.createElement('div');picker.className='engine-picker';
+          const cancel=document.createElement('button');cancel.type='button';cancel.className='engine-picker-cancel';cancel.textContent='× Cancel';
+          cancel.onclick=x=>{x.preventDefault();x.stopPropagation();picker.remove();};picker.appendChild(cancel);
           Object.entries(window._searchEngines||{}).forEach(([key,e])=>{
-            const b=document.createElement('button'); b.type='button'; b.textContent=e.name;
-            b.onclick=x=>{x.preventDefault();x.stopPropagation();
-              const old=card.dataset.currentEngine||'google';
-              const input=card.querySelector('input');
-              input.dataset.engine=key;
-              card.querySelector('.engine-title').textContent=e.title;
-              card.querySelector('.engine-title').style.color=e.color||'';
-              card.style.border='1px solid '+(e.border||e.color||'currentColor');
-              card.style.background=e.bg||'';
-              input.placeholder=e.placeholder;
-              card.dataset.currentEngine=key;
-              picker.remove();
-            };
+            const b=document.createElement('button');b.type='button';b.textContent=e.name;
+            b.onclick=x=>{x.preventDefault();x.stopPropagation();input.dataset.engine=key;card.dataset.currentEngine=key;card.querySelector('.engine-title').textContent=e.title;card.querySelector('.engine-title').style.color=e.color||'';card.style.border='1px solid '+(e.border||e.color||'currentColor');card.style.background=e.bg||'';input.placeholder=e.placeholder||'Search...';picker.remove();save();};
             picker.appendChild(b);
           });
-          card.appendChild(picker);
-          picker.classList.add('show');
+          card.appendChild(picker);picker.classList.add('show');
         });
-        const initialEngine=(window._searchEngines||{}).google;
-        if(initialEngine){ card.style.border='1px solid '+initialEngine.border; card.style.background=initialEngine.bg; card.querySelector('.engine-title').style.color=initialEngine.color; }
-        positions[id]={left:20,top:20,x:0,y:0};
-        card.style.setProperty('--widget-left','20px');
-        card.style.setProperty('--widget-top','20px');
         save();updateCanvasHeight();
       }
 
@@ -1403,9 +1416,12 @@
 
         canvas.appendChild(card);
         setupWidget(card,canvas.querySelectorAll('.card').length-1);
-        positions[id]={left:20,top:Math.max(0,canvas.clientHeight-150),x:0,y:0};
-        card.style.setProperty('--widget-left','20px');
-        card.style.setProperty('--widget-top',Math.max(0,canvas.clientHeight-150)+'px');
+        const spot=findOpenWidgetSpot(400,180,card);
+        positions[id]={left:spot.left,top:spot.top,x:0,y:0,w:400,h:180};
+        card.style.setProperty('--widget-left',spot.left+'px');
+        card.style.setProperty('--widget-top',spot.top+'px');
+        card.style.setProperty('--widget-width','400px');
+        card.style.setProperty('--widget-height','180px');
         save();updateCanvasHeight();
       }
 
@@ -2090,11 +2106,21 @@ document.querySelectorAll('input[type="search"]').forEach(input => {
         card.style.setProperty('--widget-y',(Number(item.y)||0)+'px');
         if(Number.isFinite(Number(item.width)))card.style.setProperty('--widget-width',Number(item.width)+'px');
         if(Number.isFinite(Number(item.height)))card.style.setProperty('--widget-height',Number(item.height)+'px');
-        if(item.color){card.dataset.widgetColor=item.color;card.style.background='';card.style.border='1px solid '+item.color;}
+        if(item.color){card.dataset.widgetColor=item.color;card.style.background='';card.style.border='1px solid '+item.color;const heading=card.querySelector('h2');if(heading)heading.style.color=item.color;}
         const ta=card.querySelector('textarea');if(ta&&item.content!==undefined)ta.value=item.content;
         const title=card.querySelector('h2');if(title&&item.title)title.textContent=item.title;
         if(widgetData[item.id])Object.assign(widgetData[item.id],{title:item.title,text:item.text,content:item.content,color:item.color});
       });
+      if(preset.searchEngines && typeof preset.searchEngines==='object'){
+        localStorage.setItem('searchCardEngines',JSON.stringify(preset.searchEngines));
+        Object.entries(preset.searchEngines).forEach(([id,engine])=>{
+          const card=document.querySelector('[data-widget-id="'+CSS.escape(id)+'"]');
+          if(card && engine){
+            card.dataset.currentEngine=engine.key||card.dataset.currentEngine||'google';
+            const title=card.querySelector('.engine-title');if(title)title.textContent=engine.title||title.textContent;
+          }
+        });
+      }
       saveWidgetData();
       updateCanvasHeight();
     }
@@ -2102,7 +2128,10 @@ document.querySelectorAll('input[type="search"]').forEach(input => {
     function openPresets(){
       const presets=JSON.parse(localStorage.getItem('aiGeneratedWidgetPresets')||'{}');const overlay=document.createElement('div');overlay.id='preset-picker';const panel=document.createElement('div');panel.id='preset-picker-panel';
       panel.innerHTML='<h2>Widget Presets</h2><p style="opacity:.7">Save and load widget positions, sizes, content, colors, and search engines.</p>';const list=document.createElement('div');
-      const render=()=>{list.innerHTML='';const names=Object.keys(presets);if(!names.length){list.innerHTML='<p style="opacity:.65">No presets saved yet.</p>';return;}names.forEach(name=>{const row=document.createElement('div');row.className='preset-row';const load=document.createElement('button');load.className='preset-load';load.textContent=name;load.onclick=()=>{applyWidgetPreset(presets[name]);overlay.remove();};const del=document.createElement('button');del.className='preset-delete';del.textContent='×';del.onclick=()=>{delete presets[name];localStorage.setItem('aiGeneratedWidgetPresets',JSON.stringify(presets));render();};row.append(load,del);list.append(row);});};
+      const render=()=>{list.innerHTML='';const names=Object.keys(presets);if(!names.length){list.innerHTML='<p style="opacity:.65">No presets saved yet.</p>';return;}names.forEach(name=>{const row=document.createElement('div');row.className='preset-row';const load=document.createElement('button');load.className='preset-load';load.textContent=name;load.onclick=()=>{
+  try{applyWidgetPreset(presets[name]);overlay.remove();}
+  catch(err){console.error('Preset load failed',err);alert('Preset could not load: '+(err?.message||err));}
+};const del=document.createElement('button');del.className='preset-delete';del.textContent='×';del.onclick=()=>{delete presets[name];localStorage.setItem('aiGeneratedWidgetPresets',JSON.stringify(presets));render();};row.append(load,del);list.append(row);});};
       const name=document.createElement('input');name.placeholder='Preset name...';const save=document.createElement('button');save.textContent='Save Current Layout';save.onclick=()=>{const n=name.value.trim()||'Preset '+(Object.keys(presets).length+1);presets[n]=getWidgetPreset();localStorage.setItem('aiGeneratedWidgetPresets',JSON.stringify(presets));name.value='';render();};
       const title=document.createElement('strong');title.textContent='Transfer between devices';const help=document.createElement('div');help.textContent='Export presets to a JSON file, then import it on another device.';help.style.cssText='font-size:12px;opacity:.7';
       const exp=document.createElement('button');exp.textContent='Export Presets';exp.onclick=()=>{const blob=new Blob([JSON.stringify({version:3,presets},null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='ai-generated-website-presets.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);};
