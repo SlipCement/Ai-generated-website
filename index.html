@@ -1420,6 +1420,8 @@
         positions[id]={left:spot.left,top:spot.top,x:0,y:0,w:400,h:180};
         card.style.setProperty('--widget-left',spot.left+'px');
         card.style.setProperty('--widget-top',spot.top+'px');
+        card.style.setProperty('--widget-x','0px');
+        card.style.setProperty('--widget-y','0px');
         card.style.setProperty('--widget-width','400px');
         card.style.setProperty('--widget-height','180px');
         save();updateCanvasHeight();
@@ -2102,14 +2104,21 @@ document.querySelectorAll('input[type="search"]').forEach(input => {
       preset.widgets.forEach(item=>{
         const card=[...document.querySelectorAll('#widget-canvas .card.widget-ready')].find(x=>x.dataset.widgetId===item.id);
         if(!card)return;
-        card.style.setProperty('--widget-x',(Number(item.x)||0)+'px');
-        card.style.setProperty('--widget-y',(Number(item.y)||0)+'px');
-        if(Number.isFinite(Number(item.width)))card.style.setProperty('--widget-width',Number(item.width)+'px');
-        if(Number.isFinite(Number(item.height)))card.style.setProperty('--widget-height',Number(item.height)+'px');
+        const loadedX=Number(item.x)||0, loadedY=Number(item.y)||0;
+        const loadedW=Number(item.width)||card.offsetWidth||400, loadedH=Number(item.height)||card.offsetHeight||180;
+        const currentLeft=parseFloat(card.style.getPropertyValue('--widget-left'))||0;
+        const currentTop=parseFloat(card.style.getPropertyValue('--widget-top'))||0;
+        positions[item.id]={left:currentLeft,top:currentTop,x:loadedX,y:loadedY,w:loadedW,h:loadedH};
+        card.style.setProperty('--widget-x',loadedX+'px');
+        card.style.setProperty('--widget-y',loadedY+'px');
+        card.style.setProperty('--widget-width',loadedW+'px');
+        card.style.transform='translate('+loadedX+'px,'+loadedY+'px)';
+        card.style.setProperty('--widget-height',loadedH+'px');
         if(item.color){card.dataset.widgetColor=item.color;card.style.background='';card.style.border='1px solid '+item.color;const heading=card.querySelector('h2');if(heading)heading.style.color=item.color;}
         const ta=card.querySelector('textarea');if(ta&&item.content!==undefined)ta.value=item.content;
         const title=card.querySelector('h2');if(title&&item.title)title.textContent=item.title;
         if(widgetData[item.id])Object.assign(widgetData[item.id],{title:item.title,text:item.text,content:item.content,color:item.color});
+        requestAnimationFrame(()=>{card.style.removeProperty('transform');});
       });
       if(preset.searchEngines && typeof preset.searchEngines==='object'){
         localStorage.setItem('searchCardEngines',JSON.stringify(preset.searchEngines));
@@ -2122,6 +2131,7 @@ document.querySelectorAll('input[type="search"]').forEach(input => {
         });
       }
       saveWidgetData();
+      save();
       updateCanvasHeight();
     }
 
