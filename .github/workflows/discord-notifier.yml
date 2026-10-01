@@ -1,0 +1,59 @@
+name: Custom Discord Notification
+
+on:
+  push:
+    branches:
+      - main  # Change this to 'master' if your default branch uses that name
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Custom Discord Message
+        env:
+          DISCORD_WEBHOOK: \${{ secrets.DISCORD_WEBHOOK }}
+        run: |
+          # Safely extract and format the entire commit message for JSON
+          COMMIT_MSG=(cat << 'EOF' | sed ':a;N;!ba;s/\n/\\n/g' | sed 's/"/\\"/g'
+          \${{ github.event.head_commit.message }}
+          EOF
+          )
+          
+          # Extract the short 7-character commit SHA
+          COMMIT_SHA=(echo "{{ github.sha }}" | cut -c1-7)
+          
+          # Construct the custom JSON payload
+          PAYLOAD=\$(cat <<EOF
+          {
+            "embeds": [
+              {
+                "title": "New Commit Pushed",
+                "color": 3447003,
+                "fields": [
+                  {
+                    "name": "Commit Message",
+                    "value": "\$COMMIT_MSG",
+                    "inline": false
+                  },
+                  {
+                    "name": "Commit Identifier (SHA)",
+                    "value": "\`$COMMIT_SHA\`",
+                    "inline": true
+                  },
+                  {
+                    "name": "Project Website",
+                    "value": "[jaspersbrowser](https://tinyurl.com)",
+                    "inline": true
+                  }
+                ]
+              }
+            ]
+          }
+          EOF
+          )
+          
+          # POST the data directly to Discord
+          curl -H "Content-Type: application/json" \
+               -X POST \
+               -d "\$PAYLOAD" \
+               \$DISCORD_WEBHOOK
