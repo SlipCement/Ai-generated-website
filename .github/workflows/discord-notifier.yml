@@ -13,11 +13,6 @@ jobs:
         env:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
           COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
-          COMMIT_AUTHOR: ${{ github.event.head_commit.author.name }}
-          COMMIT_SHA: ${{ github.sha }}
-          COMMIT_URL: ${{ github.event.head_commit.html_url }}
-          COMPARE_URL: ${{ github.event.compare }}
-          REPO: ${{ github.repository }}
         run: |
           if [ -z "$DISCORD_WEBHOOK" ]; then
             echo "::error::DISCORD_WEBHOOK secret is not configured."
@@ -25,24 +20,18 @@ jobs:
           fi
 
           payload=$(jq -n \
-            --arg title "🚀 New Commit Pushed" \
             --arg message "$COMMIT_MESSAGE" \
-            --arg author "$COMMIT_AUTHOR" \
-            --arg sha "$COMMIT_SHA" \
-            --arg commit_url "$COMMIT_URL" \
-            --arg compare_url "$COMPARE_URL" \
-            --arg repo "$REPO" \
             '{
-              username: "GitHub",
               embeds: [{
-                title: $title,
-                description: ("**Commit Message**\\n" + $message),
+                title: "New Commit Pushed",
+                description: ("**Commit Message**\n\n" + $message),
                 color: 3447003,
                 fields: [
-                  {name: "Author", value: $author, inline: true},
-                  {name: "Repository", value: $repo, inline: true},
-                  {name: "Commit", value: ("[" + ($sha[0:7]) + "](" + $commit_url + ")"), inline: false},
-                  {name: "Changes", value: ("[View the changes](" + $compare_url + ")"), inline: false}
+                  {
+                    name: "Website",
+                    value: "[Open Jaspers Browser](https://tinyurl.com/jaspersbrowser)",
+                    inline: false
+                  }
                 ]
               }]
             }')
